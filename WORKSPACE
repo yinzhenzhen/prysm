@@ -46,6 +46,21 @@ http_archive(
     url = "https://github.com/bazelbuild/rules_k8s/archive/c1daa04ce0a83fbaa4396fb4987d7675cd24f25e.tar.gz",
 )
 
+http_archive(
+    name = "bazel_toolchains",
+    strip_prefix = "bazel-toolchains-add33a2bc6a7abb5ecca73cfdfea77a119007ba6",
+    urls = [
+        "https://github.com/bazelbuild/bazel-toolchains/archive/add33a2bc6a7abb5ecca73cfdfea77a119007ba6.tar.gz",
+    ],
+)
+
+load(
+    "@bazel_toolchains//repositories:repositories.bzl",
+    bazel_toolchains_repositories = "repositories",
+)
+
+bazel_toolchains_repositories()
+
 load(
     "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",

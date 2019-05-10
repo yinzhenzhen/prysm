@@ -1,0 +1,6 @@
+# Cross compile for linux ARM from k8 via clang.
+build:linux_arm64 --platforms=@io_bazel_rules_go//go/toolchain:linux_arm64
+build:linux_arm64 --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/1.2/bazel_0.25.0/default:toolchain
+build:linux_arm64 --cpu=armeabi-v7a
+build:linux_arm64 --host_cpu=k8
+build:linux_arm64 --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
