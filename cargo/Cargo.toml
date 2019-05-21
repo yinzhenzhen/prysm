@@ -14,3 +14,11 @@ path = "fake_lib.rs"
 [dependencies]
 bls-aggregates = { git = "https://github.com/sigp/signature-schemes", tag = "0.6.1" }
 
+# Fixes (?)
+[raze.crates.crunchy.'0.1.6']
+gen_buildrs = true
+
+[raze.crates.proc-macro2.'0.4.30']
+additional_flags = [
+    "--cfg=use_proc_macro",
+]
