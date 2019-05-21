@@ -1,0 +1,10 @@
+[package]
+name = "prysm"
+version = "0.0.0"
+
+[raze]
+workspace_path = "//cargo"
+genmode = "remote"
+
+[dependencies]
+bls-aggregates = { git = "https://github.com/sigp/signature-schemes", tag = "0.6.1" }

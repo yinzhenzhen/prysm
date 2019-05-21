@@ -46,6 +46,19 @@ http_archive(
     url = "https://github.com/bazelbuild/rules_k8s/archive/7475ba20133e4a3f585a3648db6d055e7d1c5f78.tar.gz",
 )
 
+http_archive(
+    name = "io_bazel_rules_rust",
+    strip_prefix = "rules_rust-8a098fd1f043826ad48843543dca92642019c7ec",
+    sha256 = "11f0f6302a09b6fead4c0164b80cfd96ae2e3a2bc09e7f2ad080c95efa74178f",
+    urls = [
+        "https://github.com/bazelbuild/rules_rust/archive/8a098fd1f043826ad48843543dca92642019c7ec.tar.gz",
+    ],
+)
+
+load("@io_bazel_rules_rust//rust:repositories.bzl", "rust_repositories")
+
+rust_repositories()
+
 load(
     "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",
