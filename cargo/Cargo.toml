@@ -22,3 +22,6 @@ gen_buildrs = true
 additional_flags = [
     "--cfg=use_proc_macro",
 ]
+
+[raze.crates.criterion.'0.2.11']
+data_attr = 'glob(["**/*.html.tt"])'

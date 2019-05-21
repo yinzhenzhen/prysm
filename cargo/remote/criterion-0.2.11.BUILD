@@ -55,6 +55,7 @@ rust_library(
     rustc_flags = [
         "--cap-lints=allow",
     ],
+    data = glob(["**/*.html.tt"]),
     version = "0.2.11",
     crate_features = [
         "criterion-plot",
