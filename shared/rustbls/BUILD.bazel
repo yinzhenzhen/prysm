@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_rust//rust:rust.bzl", "rust_library")
+
+rust_library(
+    name = "rust_bls_staticlib",
+    srcs = [
+        "bls.rs",
+    ],
+    crate_type = "staticlib",
+)
+
+cc_library(
+    name = "rust_bls_archive",
+    srcs = [
+        ":rust_bls_staticlib",
+    ],
+    linkstatic = True,
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "bls.go",
+        "bls.s",
+    ],
+    cdeps = [
+        ":rust_bls_archive",
+    ],
+    cgo = True,
+    importpath = "github.com/prysmaticlabs/prysm/shared/rustbls",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "rustbls",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
