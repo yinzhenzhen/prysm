@@ -6,7 +6,6 @@ edition = "2018"
 [raze]
 workspace_path = "//cargo"
 genmode = "Remote"
-output_buildfile_suffix = "BUILD.bazel"
 
 # Mandatory (or Cargo tooling is unhappy)
 [lib]
