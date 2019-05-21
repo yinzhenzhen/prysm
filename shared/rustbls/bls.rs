@@ -6,5 +6,5 @@ pub extern fn greet(name: String) -> String {
 
 #[no_mangle]
 pub extern fn hello() {
-    print!("Hello world")
+    println!("Hello world")
 }
