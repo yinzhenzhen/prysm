@@ -9,12 +9,10 @@ rust_library(
     crate_type = "staticlib",
 )
 
-cc_library(
+cc_import(
     name = "rust_bls_archive",
-    srcs = [
-        ":rust_bls_staticlib",
-    ],
-    linkstatic = True,
+    static_library = ":rust_bls_staticlib",
+    alwayslink = True,
 )
 
 go_library(
