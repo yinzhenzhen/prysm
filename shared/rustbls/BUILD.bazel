@@ -1,29 +1,21 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 load("@io_bazel_rules_rust//rust:rust.bzl", "rust_library")
 
 rust_library(
     name = "rust_bls_staticlib",
     srcs = [
-        "bls.rs",
+        "lib.rs",
     ],
     crate_type = "staticlib",
-    rustc_flags = [],
     deps = [
-        "//cargo:bls_aggregates",
+        #"//cargo:bls_aggregates",
     ],
 )
 
-#cc_import(
-#    name = "rust_bls_archive",
-#    static_library = ":rust_bls_staticlib",
-#    alwayslink = True,
-#)
-
-cc_library(
+cc_import(
     name = "rust_bls_archive",
-    srcs = [":rust_bls_staticlib"],
-    linkstatic = 1,
-    #    alwayslink = 1,
+    static_library = ":rust_bls_staticlib",
+    alwayslink = 1,
 )
 
 go_library(
@@ -36,13 +28,7 @@ go_library(
         ":rust_bls_archive",
     ],
     cgo = True,
-    clinkopts = [
-        #        "-L .",
-        "-ldl",
-        #        "-lrust_bls_staticlib",
-    ],
-    gc_goopts = [
-    ],
+    clinkopts = ["-ldl"],
     importpath = "github.com/prysmaticlabs/prysm/shared/rustbls",
     visibility = ["//visibility:private"],
 )
@@ -51,4 +37,10 @@ go_binary(
     name = "rustbls",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["bls_test.go"],
+    embed = [":go_default_library"],
 )

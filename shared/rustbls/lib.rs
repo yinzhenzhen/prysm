@@ -5,6 +5,6 @@ pub extern fn greet(name: String) -> String {
 }
 
 #[no_mangle]
-pub extern fn hello() {
+pub extern "C" fn hello() {
     println!("Hello world")
 }

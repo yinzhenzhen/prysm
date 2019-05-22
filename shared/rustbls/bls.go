@@ -1,5 +1,8 @@
 package main
 
+// #cgo LDFLAGS: -ldl
+import "C"
+
 func crosscall()
 
 func main() {
