@@ -30,8 +30,9 @@ var (
 
 // Eth1DataVote defines the struct which keeps track of the vote count of individual deposit root.
 type Eth1DataVote struct {
-	DepositRoot []byte
-	VoteCount   uint64
+	DepositRoot  []byte
+	DepositCount uint64
+	VoteCount    uint64
 }
 
 // Eth1DataVoteCache is a struct with 1 queue for looking up eth1 data vote count by deposit root.

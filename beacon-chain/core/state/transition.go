@@ -343,6 +343,14 @@ func verifyOperationLengths(state *pb.BeaconState, body *pb.BeaconBlockBody) err
 		)
 	}
 
+	if state.Eth1Data.DepositCount < state.Eth1DepositIndex { // Underflow condition
+		return fmt.Errorf(
+			"state eth1data deposit count (%d) is less than state eth1 deposit index (%d)",
+			state.Eth1Data.DepositCount,
+			state.Eth1DepositIndex,
+		)
+	}
+
 	maxDeposits := mathutil.Min(params.BeaconConfig().MaxDeposits, state.Eth1Data.DepositCount-state.Eth1DepositIndex)
 	// Verify outstanding deposits are processed up to max number of deposits
 	if len(body.Deposits) != int(maxDeposits) {

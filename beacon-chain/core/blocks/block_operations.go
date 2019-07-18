@@ -47,6 +47,10 @@ func VerifyProposerSignature(
 //    if state.eth1_data_votes.count(body.eth1_data) * 2 > SLOTS_PER_ETH1_VOTING_PERIOD:
 //        state.latest_eth1_data = body.eth1_data
 func ProcessEth1DataInBlock(beaconState *pb.BeaconState, block *pb.BeaconBlock) (*pb.BeaconState, error) {
+	if block.Body.Eth1Data.DepositCount == 0 {
+		return nil, errors.New("block body is missing eth1data deposit count")
+	}
+
 	beaconState.Eth1DataVotes = append(beaconState.Eth1DataVotes, block.Body.Eth1Data)
 
 	voteCount, err := eth1DataCache.Eth1DataVote(block.Body.Eth1Data.DepositRoot)
@@ -65,8 +69,9 @@ func ProcessEth1DataInBlock(beaconState *pb.BeaconState, block *pb.BeaconBlock) 
 	}
 
 	if err := eth1DataCache.AddEth1DataVote(&cache.Eth1DataVote{
-		DepositRoot: block.Body.Eth1Data.DepositRoot,
-		VoteCount:   voteCount,
+		DepositRoot:  block.Body.Eth1Data.DepositRoot,
+		DepositCount: block.Body.Eth1Data.DepositCount,
+		VoteCount:    voteCount,
 	}); err != nil {
 		return nil, fmt.Errorf("could not save eth1 data vote cache: %v", err)
 	}

@@ -364,9 +364,15 @@ func (ps *ProposerServer) defaultEth1DataResponse(ctx context.Context, currentHe
 		}
 		depositRoot = trie.Root()
 	}
+
+	if depositsTillHeight == 0 {
+		return nil, errors.New("beaconDB deposits number is zero")
+	}
+
 	return &pbp2p.Eth1Data{
-		DepositRoot: depositRoot[:],
-		BlockHash:   blockHash[:],
+		DepositRoot:  depositRoot[:],
+		BlockHash:    blockHash[:],
+		DepositCount: depositsTillHeight,
 	}, nil
 }
 
