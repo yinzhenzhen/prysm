@@ -79,6 +79,13 @@ load(
 
 container_repositories()
 
+load(
+    "@io_bazel_rules_docker//go:image.bzl",
+    go_image_repos = "repositories",
+)
+
+go_image_repos()
+
 # This requires rules_docker to be fully instantiated before it is pulled in.
 load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_defaults", "k8s_repositories")
 
@@ -117,13 +124,6 @@ gazelle_dependencies()
 load("@com_github_atlassian_bazel_tools//gometalinter:deps.bzl", "gometalinter_dependencies")
 
 gometalinter_dependencies()
-
-load(
-    "@io_bazel_rules_docker//go:image.bzl",
-    _go_image_repos = "repositories",
-)
-
-_go_image_repos()
 
 http_archive(
     name = "prysm_testnet_site",
