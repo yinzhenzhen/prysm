@@ -137,3 +137,7 @@ func (p *TestP2P) Disconnect(pid peer.ID) error {
 func (p *TestP2P) AddHandshake(pid peer.ID, hello *pb.Hello) {
 	// TODO(3147): add this.
 }
+
+func (p *TestP2P) Handshakes() map[peer.ID]*pb.Hello {
+	return nil
+}

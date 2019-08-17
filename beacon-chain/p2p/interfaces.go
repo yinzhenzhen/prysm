@@ -47,4 +47,5 @@ type PeerManager interface {
 // HandshakeManager abstracts certain methods regarding handshake records.
 type HandshakeManager interface {
 	AddHandshake(peer.ID, *pb.Hello)
+	Handshakes() map[peer.ID]*pb.Hello
 }
