@@ -33,3 +33,7 @@ func (r *RegularSync) Stop() error {
 func (r *RegularSync) Status() error {
 	return nil
 }
+
+func (r *RegularSync) HighestFinalizedEpoch() (uint64, []byte) {
+	return 0, nil
+}
