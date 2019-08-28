@@ -2,12 +2,15 @@ package sync
 
 import (
 	"context"
-	"time"
 
 	"github.com/prysmaticlabs/prysm/beacon-chain/blockchain"
 	"github.com/prysmaticlabs/prysm/beacon-chain/db"
 	"github.com/prysmaticlabs/prysm/beacon-chain/operations"
 	"github.com/prysmaticlabs/prysm/beacon-chain/p2p"
+<<<<<<< Updated upstream
+=======
+	pb "github.com/prysmaticlabs/prysm/proto/beacon/p2p/v1"
+>>>>>>> Stashed changes
 	"github.com/prysmaticlabs/prysm/shared"
 )
 
@@ -31,13 +34,18 @@ type blockchainService interface {
 
 // NewRegularSync service.
 func NewRegularSync(cfg *Config) *RegularSync {
-	return &RegularSync{
+	r := &RegularSync{
 		ctx:        context.Background(),
 		db:         cfg.DB,
 		p2p:        cfg.P2P,
 		operations: cfg.Operations,
 		chain:      cfg.Chain,
 	}
+
+	r.registerRPCHandlers()
+	r.registerSubscribers()
+
+	return r
 }
 
 // RegularSync service is responsible for handling all run time p2p related operations as the
@@ -50,15 +58,8 @@ type RegularSync struct {
 	chain      blockchainService
 }
 
-// Start the regular sync service by initializing all of the p2p sync handlers.
+// Start the regular sync service.
 func (r *RegularSync) Start() {
-	log.Info("Starting regular sync")
-	for !r.p2p.Started() {
-		time.Sleep(200 * time.Millisecond)
-	}
-	r.registerRPCHandlers()
-	r.registerSubscribers()
-	log.Info("Regular sync started")
 }
 
 // Stop the regular sync service.
@@ -83,3 +84,8 @@ type Checker interface {
 	Syncing() bool
 	Status() error
 }
+
+type HelloTracker interface {
+	Hellos() map[peer.ID]*pb.Hello
+}
+
