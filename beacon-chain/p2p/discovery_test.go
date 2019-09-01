@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"fmt"
@@ -155,4 +156,47 @@ func TestStaticPeering_PeersAreAdded(t *testing.T) {
 	if len(peers) != 5 {
 		t.Errorf("Not all peers added to peerstore, wanted %d but got %d", 5, len(peers))
 	}
+}
+
+func TestAdvertise_AdvertiseTopicSuccessful(t *testing.T) {
+	port := 2000
+	ipAddr, pkey := createAddrAndPrivKey(t)
+	bootListener := createListener(ipAddr, port, pkey)
+	defer bootListener.Close()
+	stopChan := make(chan struct{})
+	timeChan0 := time.After(TopicAdvertisementPeriod)
+
+	go func() {
+		<-timeChan0
+		stopChan <- struct{}{}
+	}()
+
+	go bootListener.RegisterTopic(discv5.Topic("testing"), stopChan)
+
+	bootNode := bootListener.Self()
+
+	cfg := &Config{Encoding: "ssz", Port: 4000, UDPPort: 4000, BootstrapNodeAddr: bootNode.String()}
+	s, err := NewService(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Start()
+	defer s.Stop()
+	_, err = s.Advertise(context.Background(), "testing")
+	if err != nil {
+		t.Fatal(err)
+	}
+	timeChan := make(chan time.Duration, 10)
+	nodeChan := make(chan *discv5.Node, 10)
+	boolChan := make(chan bool, 10)
+	go s.dv5Listener.SearchTopic("testing", timeChan, nodeChan, boolChan)
+	go func() {
+		for {
+			timeChan <- time.Duration(0)
+			boolChan <- true
+			time.Sleep(100 * time.Millisecond)
+			//nodeChan <- &discv5.Node{}
+		}
+	}()
+	<-nodeChan
 }
