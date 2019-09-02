@@ -19,6 +19,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/prysmaticlabs/prysm/shared/iputils"
 	"github.com/prysmaticlabs/prysm/shared/version"
 	"github.com/sirupsen/logrus"
 	_ "go.uber.org/automaxprocs"
@@ -55,6 +56,10 @@ func createListener(ipAddr string, port int, privKey *ecdsa.PrivateKey) *discv5.
 	ip := net.ParseIP(ipAddr)
 	if ip.To4() == nil {
 		log.Fatalf("IPV4 address not provided instead %s was provided", ipAddr)
+	}
+	ipAddr, err := iputils.ExternalIPv4()
+	if err != nil {
+		log.Fatal(err)
 	}
 	udpAddr := &net.UDPAddr{
 		IP:   net.ParseIP(ipAddr),
