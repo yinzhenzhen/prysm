@@ -56,8 +56,10 @@ func createListener(ipAddr string, port int, privKey *ecdsa.PrivateKey) *discv5.
 	if ip.To4() == nil {
 		log.Fatalf("IPV4 address not provided instead %s was provided", ipAddr)
 	}
+	mask := ip.DefaultMask()
+	newIP := ip.Mask(mask)
 	udpAddr := &net.UDPAddr{
-		IP:   net.ParseIP(ipAddr),
+		IP:   newIP,
 		Port: port,
 	}
 	conn, err := net.ListenUDP("udp4", udpAddr)
