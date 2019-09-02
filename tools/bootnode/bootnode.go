@@ -15,6 +15,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
@@ -49,7 +50,12 @@ func main() {
 	node := listener.Self()
 	log.Infof("Running bootnode, url: %s", node.String())
 
-	select {}
+	for {
+		time.Sleep(10 * time.Second)
+		nodes := make([]*discv5.Node, 10)
+		n := listener.ReadRandomNodes(nodes)
+		log.Infof("Nodes: %v", nodes[:n])
+	}
 }
 
 func createListener(ipAddr string, port int, privKey *ecdsa.PrivateKey) *discv5.Network {
