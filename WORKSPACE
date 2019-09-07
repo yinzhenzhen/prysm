@@ -1004,7 +1004,7 @@ go_repository(
 
 go_repository(
     name = "org_golang_x_xerrors",
-    commit = "a5947ffaace3e882f334c1750858b4a6a7e52422",
+    commit = "a985d3407aa71f30cf86696ee0a2f409709f22e1",
     importpath = "golang.org/x/xerrors",
 )
 
