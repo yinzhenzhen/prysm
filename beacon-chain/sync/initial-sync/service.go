@@ -132,6 +132,7 @@ func (s *InitialSync) Start() {
 			log.Error(err)
 			continue
 		}
+		strm.Close()
 
 		for _, blk := range resp {
 			if blk.Slot <= headSlot {
