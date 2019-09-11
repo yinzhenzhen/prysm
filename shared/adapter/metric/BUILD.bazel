@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["metric.go"],
+    deprecation = "Part of deprecated P2P library. Do not use.",
     importpath = "github.com/prysmaticlabs/prysm/shared/adapter/metric",
     visibility = ["//visibility:public"],
     deps = [

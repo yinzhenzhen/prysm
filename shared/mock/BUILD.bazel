@@ -4,10 +4,12 @@ package(default_testonly = True)
 
 go_library(
     name = "go_default_library",
+    testonly = True,
     srcs = [
         "broadcaster_mock.go",
         "feed_mock.go",
     ],
+    deprecation = "Use github.com/prysmaticlabs/prysmaticlabs/p2p/testing",
     importpath = "github.com/prysmaticlabs/prysm/shared/mock",
     visibility = ["//visibility:public"],
     deps = [
