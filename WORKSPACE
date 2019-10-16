@@ -1259,3 +1259,31 @@ go_repository(
     sum = "h1:n9HxLrNxWWtEb1cA950nuEEj3QnKbtsCJ6KjcgisNUs=",
     version = "v0.0.0-20191002040644-a1355ae1e2c3",
 )
+
+go_repository(
+    name = "com_github_bojand_ghz",
+    importpath = "github.com/bojand/ghz",
+    sum = "h1:pf56VoHMNzu2gN+0ySfWozlIV1BT7Ll86xlJUTcTYqg=",
+    version = "v0.41.0",
+)
+
+go_repository(
+    name = "com_github_jhump_protoreflect",
+    importpath = "github.com/jhump/protoreflect",
+    sum = "h1:NgpVT+dX71c8hZnxHof2M7QDK7QtohIJ7DYycjnkyfc=",
+    version = "v1.5.0",
+)
+
+go_repository(
+    name = "org_uber_go_multierr",
+    importpath = "go.uber.org/multierr",
+    sum = "h1:6I+W7f5VwC5SV9dNrZ3qXrDB9mD0dyGOi/ZJmYw03T4=",
+    version = "v1.2.0",
+)
+
+go_repository(
+    name = "org_uber_go_atomic",
+    importpath = "go.uber.org/atomic",
+    sum = "h1:cxzIVoETapQEqDhQu3QfnvXAV4AlzcvUCxkVUFw3+EU=",
+    version = "v1.4.0",
+)
