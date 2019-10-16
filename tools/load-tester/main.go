@@ -14,7 +14,7 @@ var (
 func main() {
 	flag.Parse()
 
-	report, err := runner.Run("test.test", *endpoint, runner.WithInsecure(true))
+	report, err := runner.Run("hello", *endpoint, runner.WithInsecure(true), runner.WithProtoFile("node.proto", []string{}))
 	if err != nil {
 		log.Error(err)
 	}
