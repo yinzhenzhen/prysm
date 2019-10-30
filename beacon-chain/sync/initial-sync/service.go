@@ -2,14 +2,12 @@ package initialsync
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/prysmaticlabs/prysm/beacon-chain/blockchain"
 	"github.com/prysmaticlabs/prysm/beacon-chain/core/helpers"
 	"github.com/prysmaticlabs/prysm/beacon-chain/db"
 	"github.com/prysmaticlabs/prysm/beacon-chain/p2p"
-	"github.com/prysmaticlabs/prysm/beacon-chain/sync/peerstatus"
 	"github.com/prysmaticlabs/prysm/shared"
 	"github.com/prysmaticlabs/prysm/shared/params"
 	"github.com/prysmaticlabs/prysm/shared/roughtime"
@@ -81,6 +79,10 @@ func (s *InitialSync) Start() {
 		s.synced = true
 		return
 	}
+	if !s.synced {
+		s.synced = true
+		return
+	}
 	log.Info("Starting initial chain sync...")
 	// Are we already in sync, or close to it?
 	if helpers.SlotToEpoch(s.chain.HeadSlot()) == helpers.SlotToEpoch(currentSlot) {
@@ -89,18 +91,20 @@ func (s *InitialSync) Start() {
 		return
 	}
 
-	// Every 5 sec, report handshake count.
-	for {
-		count := peerstatus.Count()
-		if count >= minStatusCount {
-			break
+	/*
+		// Every 5 sec, report handshake count.
+		for {
+			count := peerstatus.Count()
+			if count >= minStatusCount {
+				break
+			}
+			log.WithField(
+				"handshakes",
+				fmt.Sprintf("%d/%d", count, minStatusCount),
+			).Info("Waiting for enough peer handshakes before syncing")
+			time.Sleep(handshakePollingInterval)
 		}
-		log.WithField(
-			"handshakes",
-			fmt.Sprintf("%d/%d", count, minStatusCount),
-		).Info("Waiting for enough peer handshakes before syncing")
-		time.Sleep(handshakePollingInterval)
-	}
+	*/
 
 	if err := s.roundRobinSync(genesis); err != nil {
 		panic(err)
