@@ -221,6 +221,52 @@ http_archive(
     urls = ["https://github.com/edenhill/librdkafka/archive/v1.2.1.tar.gz"],
 )
 
+http_archive(
+    name = "herumi_bls",
+    build_file_content = all_content,
+    strip_prefix = "bls-607fd587494f75edd7239b132fee172f0dbcd86a",
+    urls = ["https://github.com/herumi/bls/archive/607fd587494f75edd7239b132fee172f0dbcd86a.tar.gz"],
+)
+
+http_archive(
+    name = "herumi_mcl",
+    build_file_content = all_content,
+    strip_prefix = "mcl-0dfad750693baa7fc89c06c4278972ac11aecf72",
+    urls = ["https://github.com/herumi/mcl/archive/0dfad750693baa7fc89c06c4278972ac11aecf72.tar.gz"],
+)
+
+local_repository(
+    name = "herumi_bls_and_mcl",
+    path = "/tmp/work",
+)
+
+http_archive(
+    name = "gmp",
+    build_file_content = all_content,
+    sha256 = "87b565e89a9a684fe4ebeeddb8399dce2599f9c9049854ca8c0dfbdea0e21912",
+    strip_prefix = "gmp-6.1.2",
+    urls = [
+        "https://gmplib.org/download/gmp/gmp-6.1.2.tar.xz",
+        "https://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz",
+    ],
+)
+
+http_archive(
+    name = "rules_m4",
+    strip_prefix = "rules_m4-c2d2ca9bdcc3e9498fdf187eb92b29830a893b1d",
+    urls = ["https://github.com/jmillikin/rules_m4/archive/c2d2ca9bdcc3e9498fdf187eb92b29830a893b1d.tar.gz"],
+)
+
+load("@rules_m4//m4:m4.bzl", "m4_register_toolchains")
+
+m4_register_toolchains()
+
+git_repository(
+    name = "bazelify_gmp",
+    commit = "bb4881b35e6864c90493980d035e1d984cafd093",
+    remote = "https://github.com/robin-thomas/bazelify-gmp",
+)
+
 # External dependencies
 
 go_repository(

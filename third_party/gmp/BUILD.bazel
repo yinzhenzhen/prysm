@@ -1,0 +1,20 @@
+load("@rules_foreign_cc//tools/build_defs:configure.bzl", "configure_make")
+
+configure_make(
+    name = "libgmp",
+    configure_env_vars = {
+        # See https://github.com/bazelbuild/rules_foreign_cc/issues/296
+        "CXX": "g++",
+    },
+    configure_options = [
+        "--enable-cxx",
+    ],
+    lib_source = "@gmp//:all",
+    shared_libraries = ["libgmp.so.10"],
+    static_libraries = [
+        "libgmp.a",
+        "libgmpxx.a",
+    ],
+    toolchains = ["@rules_m4//m4:current_m4_toolchain"],  # This doesn't add m4 to the path for some reason? Currently using system m4 in path...
+    visibility = ["//visibility:public"],
+)
