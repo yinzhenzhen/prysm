@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"github.com/gogo/protobuf/proto"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
@@ -88,23 +89,40 @@ func (p *AttCaches) DeleteAggregatedAttestation(att *ethpb.Attestation) error {
 }
 
 // HasAggregatedAttestation checks if the input attestations has already existed in cache.
-func (p *AttCaches) HasAggregatedAttestation(att *ethpb.Attestation) (bool, error) {
-	r, err := ssz.HashTreeRoot(att)
-	if err != nil {
-		return false, errors.Wrap(err, "could not tree hash attestation")
-	}
+func (p *AttCaches) HasAggregatedAttestation(att *ethpb.Attestation) bool {
+	// Check aggregated attestation pool
+	for s, i := range p.aggregatedAtt.Items() {
+		// Type assertion for the worst case. This shouldn't happen.
+		a, ok := i.Object.(*ethpb.Attestation)
+		if !ok {
+			p.aggregatedAtt.Delete(s)
+		}
 
-	for k := range p.aggregatedAtt.Items() {
-		if k == string(r[:]) {
-			return true, nil
+		// Verify if we seen this attestation data at all.
+		if proto.Equal(a.Data, att.Data) {
+			// Verify the bit field of the input attestation is fully contained.
+			if a.AggregationBits.Contains(att.AggregationBits) {
+				return true
+			}
 		}
 	}
 
-	for k := range p.blockAtt.Items() {
-		if k == string(r[:]) {
-			return true, nil
+	// Check attestations received in blocks
+	for s, i := range p.blockAtt.Items() {
+		// Type assertion for the worst case. This shouldn't happen.
+		a, ok := i.Object.(*ethpb.Attestation)
+		if !ok {
+			p.blockAtt.Delete(s)
+		}
+
+		// Verify if we seen this attestation data at all.
+		if proto.Equal(a.Data, att.Data) {
+			// Verify the bit field of the input attestation is fully contained.
+			if a.AggregationBits.Contains(att.AggregationBits) {
+				return true
+			}
 		}
 	}
 
-	return false, nil
+	return false
 }
