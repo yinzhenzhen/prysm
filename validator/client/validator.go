@@ -17,6 +17,7 @@ import (
 	"github.com/prysmaticlabs/prysm/shared/bytesutil"
 	"github.com/prysmaticlabs/prysm/shared/hashutil"
 	"github.com/prysmaticlabs/prysm/shared/params"
+	"github.com/prysmaticlabs/prysm/shared/roughtime"
 	"github.com/prysmaticlabs/prysm/shared/slotutil"
 	"github.com/prysmaticlabs/prysm/validator/db"
 	"github.com/prysmaticlabs/prysm/validator/keymanager"
@@ -217,8 +218,12 @@ func (v *validator) NextSlot() <-chan uint64 {
 
 // SlotDeadline is the start time of the next slot.
 func (v *validator) SlotDeadline(slot uint64) time.Time {
-	secs := (slot + 1) * params.BeaconConfig().SecondsPerSlot
+	secs := (slot + params.BeaconConfig().SlotsPerEpoch) * params.BeaconConfig().SecondsPerSlot
 	return time.Unix(int64(v.genesisTime), 0 /*ns*/).Add(time.Duration(secs) * time.Second)
+}
+
+func (v *validator) HasSlotCompleted(slot uint64) bool {
+	return roughtime.Now().After(time.Unix(int64(v.genesisTime), 0 /*ns*/).Add(time.Duration((slot+1)*params.BeaconConfig().SecondsPerSlot) * time.Second))
 }
 
 // UpdateDuties checks the slot number to determine if the validator's
@@ -230,7 +235,7 @@ func (v *validator) UpdateDuties(ctx context.Context, slot uint64) error {
 		return nil
 	}
 	// Set deadline to end of epoch.
-	ctx, cancel := context.WithDeadline(ctx, v.SlotDeadline(helpers.StartSlot(helpers.SlotToEpoch(slot)+1)))
+	ctx, cancel := context.WithDeadline(ctx, v.SlotDeadline(helpers.StartSlot(helpers.SlotToEpoch(slot)+2)))
 	defer cancel()
 	ctx, span := trace.StartSpan(ctx, "validator.UpdateAssignments")
 	defer span.End()

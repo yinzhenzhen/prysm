@@ -28,6 +28,7 @@ type Validator interface {
 	ProposeBlock(ctx context.Context, slot uint64, pubKey [48]byte)
 	SubmitAggregateAndProof(ctx context.Context, slot uint64, pubKey [48]byte)
 	LogAttestationsSubmitted()
+	HasSlotCompleted(slot uint64) bool
 }
 
 // Run the main validator routine. This routine exits if the context is
@@ -66,6 +67,10 @@ func run(ctx context.Context, v Validator) {
 			log.Info("Context canceled, stopping validator")
 			return // Exit if context is canceled.
 		case slot := <-v.NextSlot():
+			if v.HasSlotCompleted(slot) {
+				log.Warn("Skipping work for slot that already completed.")
+				continue
+			}
 			span.AddAttributes(trace.Int64Attribute("slot", int64(slot)))
 			slotCtx, cancel := context.WithDeadline(ctx, v.SlotDeadline(slot))
 			// Report this validator client's rewards and penalties throughout its lifecycle.

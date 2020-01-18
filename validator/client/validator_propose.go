@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
@@ -42,7 +43,8 @@ func (v *validator) ProposeBlock(ctx context.Context, slot uint64, pubKey [48]by
 	}
 
 	// Request block from beacon node
-	b, err := v.validatorClient.GetBlock(ctx, &ethpb.BlockRequest{
+	shortCtx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	b, err := v.validatorClient.GetBlock(shortCtx, &ethpb.BlockRequest{
 		Slot:         slot,
 		RandaoReveal: randaoReveal,
 		Graffiti:     v.graffiti,

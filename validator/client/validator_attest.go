@@ -49,7 +49,8 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 		Slot:           slot,
 		CommitteeIndex: duty.CommitteeIndex,
 	}
-	data, err := v.validatorClient.GetAttestationData(ctx, req)
+	shortCtx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	data, err := v.validatorClient.GetAttestationData(shortCtx, req)
 	if err != nil {
 		log.Errorf("Could not request attestation to sign at slot %d: %v", slot, err)
 		return
@@ -129,7 +130,10 @@ func (v *validator) indexInCommittee(pubKey [48]byte, duty *ethpb.DutiesResponse
 	v.pubKeyToIDLock.RLock()
 	defer v.pubKeyToIDLock.RUnlock()
 
-	index := v.pubKeyToID[pubKey]
+	index, ok := v.pubKeyToID[pubKey]
+	if !ok {
+		return 0, 0, errors.New("validator doesnt have an ID")
+	}
 	for i, validatorIndex := range duty.Committee {
 		if validatorIndex == index {
 			return uint64(i), index, nil
