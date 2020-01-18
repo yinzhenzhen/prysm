@@ -6,6 +6,7 @@ import (
 
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
 	"github.com/prysmaticlabs/prysm/beacon-chain/blockchain"
+	"github.com/prysmaticlabs/prysm/beacon-chain/cache/depositcache"
 	statefeed "github.com/prysmaticlabs/prysm/beacon-chain/core/feed/state"
 	"github.com/prysmaticlabs/prysm/beacon-chain/db"
 	"github.com/prysmaticlabs/prysm/beacon-chain/operations/attestations"
@@ -24,6 +25,8 @@ type Server struct {
 	HeadFetcher          blockchain.HeadFetcher
 	FinalizationFetcher  blockchain.FinalizationFetcher
 	ParticipationFetcher blockchain.ParticipationFetcher
+	DepositFetcher       depositcache.DepositFetcher
+	BlockFetcher         powchain.POWBlockFetcher
 	StateNotifier        statefeed.Notifier
 	Pool                 attestations.Pool
 	IncomingAttestation  chan *ethpb.Attestation

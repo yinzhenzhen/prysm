@@ -337,6 +337,26 @@ func (mr *MockBeaconChainClientMockRecorder) StreamAttestations(arg0, arg1 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamAttestations", reflect.TypeOf((*MockBeaconChainClient)(nil).StreamAttestations), varargs...)
 }
 
+// StreamValidatorsInfo mocks base method
+func (m *MockBeaconChainClient) StreamValidatorsInfo(arg0 context.Context, arg1 ...grpc.CallOption) (v1alpha1.BeaconChain_StreamValidatorsInfoClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "StreamValidatorsInfo", varargs...)
+	ret0, _ := ret[0].(v1alpha1.BeaconChain_StreamValidatorsInfoClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StreamValidatorsInfo indicates an expected call of StreamValidatorsInfo
+func (mr *MockBeaconChainClientMockRecorder) StreamValidatorsInfo(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamValidatorsInfo", reflect.TypeOf((*MockBeaconChainClient)(nil).StreamValidatorsInfo), varargs...)
+}
+
 // StreamChainHead mocks base method
 func (m *MockBeaconChainClient) StreamChainHead(arg0 context.Context, arg1 *empty.Empty, arg2 ...grpc.CallOption) (v1alpha1.BeaconChain_StreamChainHeadClient, error) {
 	m.ctrl.T.Helper()
