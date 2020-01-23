@@ -741,11 +741,7 @@ func VerifyIndexedAttestation(ctx context.Context, beaconState *pb.BeaconState, 
 	var pubkey *bls.PublicKey
 	var err error
 	if len(indices) > 0 {
-		pubkey, err = bls.PublicKeyFromBytes(beaconState.Validators[indices[0]].PublicKey)
-		if err != nil {
-			return errors.Wrap(err, "could not deserialize validator public key")
-		}
-		for _, i := range indices[1:] {
+		for _, i := range indices {
 			pk, err := bls.PublicKeyFromBytes(beaconState.Validators[i].PublicKey)
 			if err != nil {
 				return errors.Wrap(err, "could not deserialize validator public key")

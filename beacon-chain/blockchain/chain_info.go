@@ -140,6 +140,10 @@ func (s *Service) HeadBlock() *ethpb.SignedBeaconBlock {
 	s.headLock.RLock()
 	defer s.headLock.RUnlock()
 
+	if s.headBlock == nil {
+		s.headBlock, _ = s.beaconDB.HeadBlock(context.Background())
+	}
+
 	return proto.Clone(s.headBlock).(*ethpb.SignedBeaconBlock)
 }
 
