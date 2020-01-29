@@ -207,7 +207,7 @@ func (s *Store) OnBlockInitialSyncStateTransition(ctx context.Context, signed *e
 	}
 
 	if featureconfig.Get().InitSyncCacheState {
-		s.initSyncState[root] = postState
+		s.initSyncState[root] = postState.Clone()
 	} else {
 		if err := s.db.SaveState(ctx, postState, root); err != nil {
 			return nil, errors.Wrap(err, "could not save state")
@@ -517,7 +517,7 @@ func (s *Store) updateJustified(ctx context.Context, state *stateTrie.BeaconStat
 		if justifiedState == nil {
 			return s.db.SaveJustifiedCheckpoint(ctx, state.CurrentJustifiedCheckpoint())
 		}
-		if err := s.db.SaveState(ctx, justifiedState, justifiedRoot); err != nil {
+		if err := s.db.SaveRawState(ctx, justifiedState, justifiedRoot); err != nil {
 			return errors.Wrap(err, "could not save justified state")
 		}
 	}
@@ -541,6 +541,34 @@ func (s *Store) updateJustifiedCheckpoint() {
 	}
 }
 
+// This receives cached state in memory for initial sync only during initial sync.
+func (s *Store) cachedPreState(ctx context.Context, b *ethpb.BeaconBlock) (*stateTrie.BeaconState, error) {
+	if featureconfig.Get().InitSyncCacheState {
+		preState := s.initSyncState[bytesutil.ToBytes32(b.ParentRoot)]
+		var err error
+		if preState == nil {
+			preState, err = s.db.State(ctx, bytesutil.ToBytes32(b.ParentRoot))
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not get pre state for slot %d", b.Slot)
+			}
+			if preState == nil {
+				return nil, fmt.Errorf("pre state of slot %d does not exist", b.Slot)
+			}
+		}
+		return preState, nil
+	}
+
+	preState, err := s.db.State(ctx, bytesutil.ToBytes32(b.ParentRoot))
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get pre state for slot %d", b.Slot)
+	}
+	if preState == nil {
+		return nil, fmt.Errorf("pre state of slot %d does not exist", b.Slot)
+	}
+
+	return preState, nil
+}
+
 // This saves every finalized state in DB during initial sync, needed as part of optimization to
 // use cache state during initial sync in case of restart.
 func (s *Store) saveInitState(ctx context.Context, state *stateTrie.BeaconState) error {
@@ -550,11 +578,11 @@ func (s *Store) saveInitState(ctx context.Context, state *stateTrie.BeaconState)
 	finalizedRoot := bytesutil.ToBytes32(state.FinalizedCheckpoint().Root)
 	fs := s.initSyncState[finalizedRoot]
 
-	if err := s.db.SaveState(ctx, fs, finalizedRoot); err != nil {
+	if err := s.db.SaveRawState(ctx, fs, finalizedRoot); err != nil {
 		return errors.Wrap(err, "could not save state")
 	}
 	for r, oldState := range s.initSyncState {
-		if oldState.Slot() < state.FinalizedCheckpoint().Epoch*params.BeaconConfig().SlotsPerEpoch {
+		if oldState.Slot < state.FinalizedCheckpoint().Epoch*params.BeaconConfig().SlotsPerEpoch {
 			delete(s.initSyncState, r)
 		}
 	}
