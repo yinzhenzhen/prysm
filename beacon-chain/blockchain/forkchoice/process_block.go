@@ -302,17 +302,17 @@ func (s *Store) getBlockPreState(ctx context.Context, b *ethpb.BeaconBlock) (*st
 func (s *Store) verifyBlkPreState(ctx context.Context, b *ethpb.BeaconBlock) (*stateTrie.BeaconState, error) {
 	if featureconfig.Get().InitSyncCacheState {
 		preState := s.initSyncState[bytesutil.ToBytes32(b.ParentRoot)]
-		var err error
 		if preState == nil {
-			preState, err = s.db.State(ctx, bytesutil.ToBytes32(b.ParentRoot))
+			origState, err := s.db.State(ctx, bytesutil.ToBytes32(b.ParentRoot))
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not get pre state for slot %d", b.Slot)
 			}
-			if preState == nil {
+			if origState == nil {
 				return nil, fmt.Errorf("pre state of slot %d does not exist", b.Slot)
 			}
+			return origState, nil
 		}
-		return stateTrie.InitializeFromProto(preState.Clone())
+		return stateTrie.InitializeFromProto(preState)
 	}
 	preState, err := s.db.State(ctx, bytesutil.ToBytes32(b.ParentRoot))
 	if err != nil {
@@ -545,17 +545,17 @@ func (s *Store) updateJustifiedCheckpoint() {
 func (s *Store) cachedPreState(ctx context.Context, b *ethpb.BeaconBlock) (*stateTrie.BeaconState, error) {
 	if featureconfig.Get().InitSyncCacheState {
 		preState := s.initSyncState[bytesutil.ToBytes32(b.ParentRoot)]
-		var err error
 		if preState == nil {
-			preState, err = s.db.State(ctx, bytesutil.ToBytes32(b.ParentRoot))
+			origState, err := s.db.State(ctx, bytesutil.ToBytes32(b.ParentRoot))
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not get pre state for slot %d", b.Slot)
 			}
-			if preState == nil {
+			if origState == nil {
 				return nil, fmt.Errorf("pre state of slot %d does not exist", b.Slot)
 			}
+			return origState, nil
 		}
-		return preState, nil
+		return stateTrie.InitializeFromProtoUnsafe(preState)
 	}
 
 	preState, err := s.db.State(ctx, bytesutil.ToBytes32(b.ParentRoot))
