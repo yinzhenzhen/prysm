@@ -77,6 +77,9 @@ func InitiateValidatorExit(state *stateTrie.BeaconState, idx uint64) (*stateTrie
 	if uint64(exitQueueChurn) >= churn {
 		exitQueueEpoch++
 	}
+	if validator.ExitEpoch != params.BeaconConfig().FarFutureEpoch {
+		return nil, errors.New("validator already exited")
+	}
 	validator.ExitEpoch = exitQueueEpoch
 	validator.WithdrawableEpoch = exitQueueEpoch + params.BeaconConfig().MinValidatorWithdrawabilityDelay
 	if err := state.UpdateValidatorAtIndex(idx, validator); err != nil {

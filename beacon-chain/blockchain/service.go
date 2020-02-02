@@ -442,11 +442,11 @@ func (s *Service) initializeChainInfo(ctx context.Context) error {
 		// would be the genesis state and block.
 		return errors.New("no finalized epoch in the database")
 	}
-	s.headState, err = s.beaconDB.State(ctx, bytesutil.ToBytes32(finalized.Root))
+	s.headState, err = s.beaconDB.HeadState(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get finalized state from db")
 	}
-	s.headBlock, err = s.beaconDB.Block(ctx, bytesutil.ToBytes32(finalized.Root))
+	s.headBlock, err = s.beaconDB.HeadBlock(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get finalized block from db")
 	}
@@ -454,7 +454,11 @@ func (s *Service) initializeChainInfo(ctx context.Context) error {
 	if s.headBlock != nil && s.headBlock.Block != nil {
 		s.headSlot = s.headBlock.Block.Slot
 	}
-	s.canonicalRoots[s.headSlot] = finalized.Root
+	headRoot, err := ssz.HashTreeRoot(s.headBlock)
+	if err != nil {
+		return err
+	}
+	s.canonicalRoots[s.headSlot] = headRoot[:]
 
 	return nil
 }

@@ -139,16 +139,16 @@ func (b *BeaconState) LatestBlockHeader() *ethpb.BeaconBlockHeader {
 		Slot: b.state.LatestBlockHeader.Slot,
 	}
 
-	parentRoot := make([]byte, len(b.state.LatestBlockHeader.ParentRoot))
-	bodyRoot := make([]byte, len(b.state.LatestBlockHeader.BodyRoot))
-	stateRoot := make([]byte, len(b.state.LatestBlockHeader.StateRoot))
+	parentRoot := make([]byte, 32)
+	bodyRoot := make([]byte, 32)
+	stateRoot := make([]byte, 32)
 
 	copy(parentRoot, b.state.LatestBlockHeader.ParentRoot)
 	copy(bodyRoot, b.state.LatestBlockHeader.BodyRoot)
 	copy(stateRoot, b.state.LatestBlockHeader.StateRoot)
-	hdr.ParentRoot = parentRoot
-	hdr.BodyRoot = bodyRoot
-	hdr.StateRoot = stateRoot
+	hdr.ParentRoot = parentRoot[:32]
+	hdr.BodyRoot = bodyRoot[:32]
+	hdr.StateRoot = stateRoot[:32]
 	return hdr
 }
 

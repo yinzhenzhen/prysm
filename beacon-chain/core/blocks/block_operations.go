@@ -255,7 +255,7 @@ func ProcessBlockHeaderNoVerify(
 		return nil, err
 	}
 
-	if !bytes.Equal(block.ParentRoot, parentRoot[:]) {
+	if bytesutil.ToBytes32(block.ParentRoot) != parentRoot {
 		return nil, fmt.Errorf(
 			"parent root %#x does not match the latest block header signing root in state %#x",
 			block.ParentRoot, parentRoot)

@@ -21,13 +21,8 @@ func (r *Service) beaconBlockSubscriber(ctx context.Context, msg proto.Message) 
 
 	block := signed.Block
 
-	headState, err := r.chain.HeadState(ctx)
-	if err != nil {
-		log.Errorf("Head state is not available: %v", err)
-		return nil
-	}
 	// Ignore block older than last finalized checkpoint.
-	if cpt := headState.FinalizedCheckpoint(); block.Slot < helpers.StartSlot(cpt.Epoch) {
+	if cpt := r.chain.FinalizedCheckpt(); block.Slot < helpers.StartSlot(cpt.Epoch) {
 		log.Debugf("Received a block older than finalized checkpoint, %d < %d",
 			block.Slot, helpers.StartSlot(cpt.Epoch))
 		return nil
@@ -36,6 +31,10 @@ func (r *Service) beaconBlockSubscriber(ctx context.Context, msg proto.Message) 
 	blockRoot, err := ssz.HashTreeRoot(block)
 	if err != nil {
 		log.Errorf("Could not sign root block: %v", err)
+		return nil
+	}
+
+	if r.db.HasBlock(ctx, blockRoot) {
 		return nil
 	}
 

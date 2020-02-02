@@ -172,8 +172,13 @@ func (s *Service) waitForMinimumPeers() {
 	if flags.Get().MinimumSyncPeers < required {
 		required = flags.Get().MinimumSyncPeers
 	}
+
+	head, err := s.chain.HeadState(s.ctx)
+	if err != nil {
+		panic(err)
+	}
 	for {
-		_, _, peers := s.p2p.Peers().BestFinalized(params.BeaconConfig().MaxPeersToSync, helpers.SlotToEpoch(s.chain.HeadSlot()))
+		_, _, peers := s.p2p.Peers().BestFinalized(params.BeaconConfig().MaxPeersToSync, helpers.SlotToEpoch(head.FinalizedCheckpoint().Epoch))
 		if len(peers) >= required {
 			break
 		}
