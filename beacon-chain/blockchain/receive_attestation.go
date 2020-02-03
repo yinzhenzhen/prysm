@@ -98,7 +98,10 @@ func (s *Service) processAttestation() {
 			for _, a := range atts {
 				hasState := s.beaconDB.HasState(ctx, bytesutil.ToBytes32(a.Data.BeaconBlockRoot)) && s.beaconDB.HasState(ctx, bytesutil.ToBytes32(a.Data.Target.Root))
 				hasBlock := s.beaconDB.HasBlock(ctx, bytesutil.ToBytes32(a.Data.BeaconBlockRoot))
-				if !(hasState && hasBlock) {
+				// According to the phase 0 spec, attestations can only affect the fork choice of the subsequent slots,
+				// a node should delay consideration in the fork choice until their slot is in the past.
+				slotReached := s.CurrentSlot() > a.Data.Slot+1
+				if !(hasState && hasBlock && slotReached) {
 					continue
 				}
 
@@ -112,10 +115,10 @@ func (s *Service) processAttestation() {
 
 				if err := s.ReceiveAttestationNoPubsub(ctx, a); err != nil {
 					log.WithFields(logrus.Fields{
-						"slot": a.Data.Slot,
-						"committeeIndex": a.Data.CommitteeIndex,
-						"beaconBlockRoot": fmt.Sprintf("%#x", bytesutil.Trunc(a.Data.BeaconBlockRoot)),
-						"targetRoot": fmt.Sprintf("%#x", bytesutil.Trunc(a.Data.Target.Root)),
+						"slot":             a.Data.Slot,
+						"committeeIndex":   a.Data.CommitteeIndex,
+						"beaconBlockRoot":  fmt.Sprintf("%#x", bytesutil.Trunc(a.Data.BeaconBlockRoot)),
+						"targetRoot":       fmt.Sprintf("%#x", bytesutil.Trunc(a.Data.Target.Root)),
 						"aggregationCount": a.AggregationBits.Count(),
 					}).WithError(err).Error("Could not receive attestation in chain service")
 				}
