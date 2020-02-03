@@ -42,7 +42,7 @@ func BenchmarkHashTreeRootState_Custom_512(b *testing.B) {
 	genesisState := setupGenesisState(b, 512)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := stateutil.HashTreeRootState(genesisState); err != nil {
+		if _, _, err := stateutil.HashTreeRootState(genesisState); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -53,7 +53,7 @@ func BenchmarkHashTreeRootState_Custom_16384(b *testing.B) {
 	genesisState := setupGenesisState(b, 16384)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := stateutil.HashTreeRootState(genesisState); err != nil {
+		if _, _, err := stateutil.HashTreeRootState(genesisState); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -64,7 +64,7 @@ func BenchmarkHashTreeRootState_Custom_300000(b *testing.B) {
 	genesisState := setupGenesisState(b, 300000)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := stateutil.HashTreeRootState(genesisState); err != nil {
+		if _, _, err := stateutil.HashTreeRootState(genesisState); err != nil {
 			b.Fatal(err)
 		}
 	}

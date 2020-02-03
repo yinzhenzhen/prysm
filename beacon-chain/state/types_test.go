@@ -32,7 +32,7 @@ func TestBeaconState_ProtoBeaconStateCompatibility(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r2, err := stateutil.HashTreeRootState(genesis)
+	r2, _, err := stateutil.HashTreeRootState(genesis)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestBeaconState_ProtoBeaconStateCompatibility(t *testing.T) {
 		t.Fatal(err)
 	}
 	genesis.Balances = balances
-	r2, err = stateutil.HashTreeRootState(genesis)
+	r2, _, err = stateutil.HashTreeRootState(genesis)
 	if err != nil {
 		t.Fatal(err)
 	}

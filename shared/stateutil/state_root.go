@@ -40,7 +40,7 @@ type stateRootHasher struct {
 // The reason for this particular function is to optimize for speed and memory allocation
 // at the expense of complete specificity (that is, this function can only be used
 // on the Prysm BeaconState data structure).
-func HashTreeRootState(state *pb.BeaconState) ([32]byte, error) {
+func HashTreeRootState(state *pb.BeaconState) ([32]byte, [][]byte, error) {
 	if featureconfig.Get().EnableSSZCache {
 		return cachedHasher.hashTreeRootState(state)
 	}
@@ -56,21 +56,22 @@ func ComputeFieldRoots(state *pb.BeaconState) ([][]byte, error) {
 	return nocachedHasher.computeFieldRoots(state)
 }
 
-func (h *stateRootHasher) hashTreeRootState(state *pb.BeaconState) ([32]byte, error) {
+func (h *stateRootHasher) hashTreeRootState(state *pb.BeaconState) ([32]byte, [][]byte, error) {
 	var fieldRoots [][]byte
 	var err error
 	if featureconfig.Get().EnableSSZCache {
 		fieldRoots, err = cachedHasher.computeFieldRoots(state)
 		if err != nil {
-			return [32]byte{}, err
+			return [32]byte{}, nil, err
 		}
 	} else {
 		fieldRoots, err = nocachedHasher.computeFieldRoots(state)
 		if err != nil {
-			return [32]byte{}, err
+			return [32]byte{}, nil, err
 		}
 	}
-	return bitwiseMerkleize(fieldRoots, uint64(len(fieldRoots)), uint64(len(fieldRoots)))
+	root, err := bitwiseMerkleize(fieldRoots, uint64(len(fieldRoots)), uint64(len(fieldRoots)))
+	return root, fieldRoots, err
 }
 
 func (h *stateRootHasher) computeFieldRoots(state *pb.BeaconState) ([][]byte, error) {

@@ -29,7 +29,7 @@ func TestStore_OnBlock(t *testing.T) {
 
 	store := NewForkChoiceService(ctx, db)
 
-	genesisStateRoot, err := stateutil.HashTreeRootState(&pb.BeaconState{})
+	genesisStateRoot, _, err := stateutil.HashTreeRootState(&pb.BeaconState{})
 	if err != nil {
 		t.Error(err)
 	}

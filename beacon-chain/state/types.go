@@ -1,11 +1,13 @@
 package state
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/protolambda/zssz/merkle"
+	"gopkg.in/d4l3k/messagediff.v1"
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
 	coreutils "github.com/prysmaticlabs/prysm/beacon-chain/core/state/stateutils"
 	pbp2p "github.com/prysmaticlabs/prysm/proto/beacon/p2p/v1"
@@ -130,7 +132,19 @@ func (b *BeaconState) HashTreeRoot() ([32]byte, error) {
 		b.recomputeRoot(int(field))
 		delete(b.dirtyFields, field)
 	}
-	return bytesutil.ToBytes32(b.merkleLayers[len(b.merkleLayers)-1][0]), nil
+	result := bytesutil.ToBytes32(b.merkleLayers[len(b.merkleLayers)-1][0])
+
+	result2, layers2, err := stateutil.HashTreeRootState(b.state)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	if result != result2 {
+		fmt.Println("Different roots!")
+		fmt.Printf("layers=%#x\n", b.merkleLayers)
+		diff, _ := messagediff.PrettyDiff(layers2, b.merkleLayers)
+		fmt.Println(diff)
+	}
+	return result, nil
 }
 
 // Merkleize 32-byte leaves into a Merkle trie for its adequate depth, returning
