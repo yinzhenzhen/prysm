@@ -195,7 +195,7 @@ func (bs *Server) generateValidatorInfo(ctx context.Context, pubKeys [][]byte) (
 			// We don't know of this validator; perhaps it's a pending deposit?
 			_, eth1BlockNumber := bs.DepositFetcher.DepositByPubkey(bs.Ctx, info.PublicKey)
 			if eth1BlockNumber != nil {
-				info.State = ethpb.ValidatorStatus_DEPOSITED
+				info.Status = ethpb.ValidatorStatus_DEPOSITED
 				if queueTimestamp, err := bs.depositQueueTimestamp(bs.Ctx, eth1BlockNumber, headState.GenesisTime()); err != nil {
 					log.WithError(err).Error("Failed to obtain queueactivation timestamp")
 				} else {
@@ -209,30 +209,35 @@ func (bs *Server) generateValidatorInfo(ctx context.Context, pubKeys [][]byte) (
 		}
 		validator := headState.ValidatorsReadOnly()[info.Index]
 
-		// State and progression timestamp
-		info.State, info.TransitionTimestamp = bs.calculateStatusAndTransition(validator, headState)
+		// Status and progression timestamp
+		info.Status, info.TransitionTimestamp = bs.calculateStatusAndTransition(validator, headState)
+
+		// TODO status timestamp
+		// validator.StatusTimestamp
 
 		// Balance
 		info.Balance = headState.Balances()[info.Index]
 
 		// Effective balance (for attesting states)
-		if info.State == ethpb.ValidatorStatus_ACTIVE ||
-			info.State == ethpb.ValidatorStatus_SLASHING ||
-			info.State == ethpb.ValidatorStatus_EXITING {
+		if info.Status == ethpb.ValidatorStatus_ACTIVE ||
+			info.Status == ethpb.ValidatorStatus_SLASHING ||
+			info.Status == ethpb.ValidatorStatus_EXITING {
 			info.EffectiveBalance = validator.EffectiveBalance()
 		}
 
 		// TODO Last attested slot
 		// validator.LastAttestedSlot
-		// TODO Next attested slot
-		// validator.NextAttestedSlot
+		// TODO Next attesting slot
+		// validator.NextAttestingSlot
 		// TODO Last proposed slot
 		// validator.LastProposedSlot
+		// TODO Next proposing slot
+		// validator.LastProposingSlot
 
 		res = append(res, info)
 
 		// Keep track of pending validators to fill in activation epoch later.
-		if info.State == ethpb.ValidatorStatus_PENDING {
+		if info.Status == ethpb.ValidatorStatus_PENDING {
 			pendingValidatorsMap[bytesutil.ToBytes48(info.PublicKey)] = len(res) - 1
 		}
 	}

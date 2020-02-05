@@ -262,7 +262,7 @@ index 2ce5c34..4cbb276 100644
 +    bytes signature = 3 [(gogoproto.moretags) = "ssz-size:\"96\""];
  }
 diff --git a/eth/v1alpha1/beacon_chain.proto b/eth/v1alpha1/beacon_chain.proto
-index f060b0d..e89f085 100644
+index a66d302..b2bc9f8 100644
 --- a/eth/v1alpha1/beacon_chain.proto
 +++ b/eth/v1alpha1/beacon_chain.proto
 @@ -15,6 +15,7 @@ syntax = "proto3";
@@ -286,40 +286,7 @@ index f060b0d..e89f085 100644
      // This includes the head block slot and root as well as information about
      // the most recent finalized and justified slots.
      rpc StreamChainHead(google.protobuf.Empty) returns (stream ChainHead) {
-@@ -203,6 +204,32 @@ service BeaconChain {
-             get: "/eth/v1alpha1/beacon/config"
-         };
-     }
-+
-+    // Server-side stream of validator information at each epoch.
-+    rpc StreamValidatorsInfo(stream ValidatorChangeSet) returns (stream ValidatorInfo) {
-+        option (google.api.http) = {
-+            get: "/eth/v1alpha1/beacon/validators/info/stream"
-+        };
-+    }
-+}
-+
-+// SetAction defines the type of action that should be applied to the keys in a validator change set.
-+enum SetAction {
-+    // ADD_VALIDATOR_KEYS adds to the existing keys.
-+    ADD_VALIDATOR_KEYS = 0;
-+    // REMOVE_VALIDATOR_KEYS removes from the existing keys.
-+    REMOVE_VALIDATOR_KEYS = 1;
-+    // SET_VALIDATOR_KEYS overwrites the existing keys.
-+    SET_VALIDATOR_KEYS = 2;
-+}
-+
-+// ValidatorChangeSet updates the server's list of keys on which to operate.
-+message ValidatorChangeSet {
-+    // Action (add/remove/set).
-+    SetAction action = 1;
-+
-+    // 48 byte BLS public keys of validators on which the operation occurs.
-+    repeated bytes public_keys = 2;
- }
- 
- // Request for attestations.
-@@ -310,7 +337,7 @@ message ChainHead {
+@@ -336,7 +337,7 @@ message ChainHead {
      uint64 head_epoch = 2;
  
      // 32 byte merkle tree root of the canonical head block in the beacon node.
@@ -328,7 +295,7 @@ index f060b0d..e89f085 100644
  
      // Most recent slot that contains the finalized block.
      uint64 finalized_slot = 4;
-@@ -319,7 +346,7 @@ message ChainHead {
+@@ -345,7 +346,7 @@ message ChainHead {
      uint64 finalized_epoch = 5;
      
      // Most recent 32 byte finalized block root.
@@ -337,7 +304,7 @@ index f060b0d..e89f085 100644
  
      // Most recent slot that contains the justified block.
      uint64 justified_slot = 7;
-@@ -328,7 +355,7 @@ message ChainHead {
+@@ -354,7 +355,7 @@ message ChainHead {
      uint64 justified_epoch = 8;
      
      // Most recent 32 byte justified block root.
@@ -346,7 +313,7 @@ index f060b0d..e89f085 100644
  
      // Most recent slot that contains the previous justified block.
      uint64 previous_justified_slot = 10;
-@@ -337,7 +364,7 @@ message ChainHead {
+@@ -363,7 +364,7 @@ message ChainHead {
      uint64 previous_justified_epoch = 11;
  
      // Previous 32 byte justified block root.
@@ -355,7 +322,7 @@ index f060b0d..e89f085 100644
  }
  
  message ListCommitteesRequest {
-@@ -382,7 +409,7 @@ message ListValidatorBalancesRequest {
+@@ -408,7 +409,7 @@ message ListValidatorBalancesRequest {
  
      // Validator 48 byte BLS public keys to filter validators for the given
      // epoch.
@@ -364,7 +331,7 @@ index f060b0d..e89f085 100644
          
      // Validator indices to filter validators for the given epoch.
      repeated uint64 indices = 4;
-@@ -403,7 +430,7 @@ message ValidatorBalances {
+@@ -429,7 +430,7 @@ message ValidatorBalances {
  
      message Balance {
          // Validator's 48 byte BLS public key.
@@ -373,7 +340,7 @@ index f060b0d..e89f085 100644
  
          // Validator's index in the validator set.
          uint64 index = 2;
-@@ -452,7 +479,7 @@ message GetValidatorRequest {
+@@ -478,7 +479,7 @@ message GetValidatorRequest {
          uint64 index = 1;
  
          // 48 byte validator public key.
@@ -382,7 +349,7 @@ index f060b0d..e89f085 100644
      }
  }
  
-@@ -494,26 +521,25 @@ message ActiveSetChanges {
+@@ -520,26 +521,25 @@ message ActiveSetChanges {
      uint64 epoch = 1;
  
      // 48 byte validator public keys that have been activated in the given epoch.
@@ -415,7 +382,7 @@ index f060b0d..e89f085 100644
  
      // Indices of validators ejected in the given epoch.
      repeated uint64 ejected_indices = 9;
-@@ -549,11 +575,11 @@ message ValidatorQueue {
+@@ -575,11 +575,11 @@ message ValidatorQueue {
  
      // Ordered list of 48 byte public keys awaiting activation. 0th index is the
      // next key to be processed.
@@ -429,7 +396,7 @@ index f060b0d..e89f085 100644
  }
  
  message ListValidatorAssignmentsRequest {
-@@ -565,7 +591,7 @@ message ListValidatorAssignmentsRequest {
+@@ -591,7 +591,7 @@ message ListValidatorAssignmentsRequest {
          bool genesis = 2;
      }
      // 48 byte validator public keys to filter assignments for the given epoch.
@@ -438,7 +405,7 @@ index f060b0d..e89f085 100644
          
      // Validator indicies to filter assignments for the given epoch.
      repeated uint64 indices = 4;
-@@ -600,7 +626,7 @@ message ValidatorAssignments {
+@@ -626,7 +626,7 @@ message ValidatorAssignments {
          uint64 proposer_slot = 4;
  
          // 48 byte BLS public key.
@@ -448,7 +415,7 @@ index f060b0d..e89f085 100644
  
      // The epoch for which this set of validator assignments is valid.
 diff --git a/eth/v1alpha1/validator.proto b/eth/v1alpha1/validator.proto
-index e1b7ecf..5103466 100644
+index 9e19670..440e193 100644
 --- a/eth/v1alpha1/validator.proto
 +++ b/eth/v1alpha1/validator.proto
 @@ -15,6 +15,7 @@ syntax = "proto3";
@@ -544,52 +511,3 @@ index e1b7ecf..5103466 100644
  
      // The validators current effective balance in gwei.
      uint64 effective_balance = 3;
-@@ -361,3 +363,48 @@ message ValidatorParticipation {
-     // The total amount of ether, in gwei, that is eligible for voting.
-     uint64 eligible_ether = 3;   
- }
-+
-+// ValidatorInfo gives information about the state of a validator at a certain epoch.
-+message ValidatorInfo {
-+    // The validator's 48 byte BLS public key.
-+    bytes public_key = 1;
-+
-+    // The validator's index in the beacon state.
-+    uint64 index = 2;
-+
-+    // The epoch for which the information pertains.
-+    uint64 epoch = 3;
-+
-+    // The validator's current state.
-+    ValidatorStatus state = 4;
-+
-+    // The unix timestamp when the validator entered the current state.
-+    uint64 state_timestamp = 5;
-+
-+    // The unix timestamp when the validator enters the next state.
-+    // This could be in the past.  Some values depend on chain operation and so will vary from epoch to epoch.
-+    // Specific times for each state are as follows:
-+    // - state == DEPOSITED: time at which Ethereum 1 deposit will be store on-chain by Ethereum 2 (variable).
-+    // - state == PENDING: time at which validator will be activated (variable).
-+    // - state == ACTIVE: no value (next transition depends on user and network actions).
-+    // - state == EXITING: time at which validator will exit.
-+    // - state == SLASHING: time at which validator will exit.
-+    // - state == EXITED: time at which validator funds will be withdrawable.
-+    uint64 transition_timestamp = 6;
-+
-+    // The validator's current balance in GWei.
-+    // Only valid for states DEPOSITED, PENDING, ACTIVE, EXITING, SLASHING.
-+    uint64 balance = 7;
-+
-+    // The validator's current effective balance in GWei.
-+    // Only valid for states ACTIVE, EXITING, SLASHING.
-+    uint64 effective_balance = 8;
-+
-+    // The slot of the validator's last block attestation.
-+    // Only valid for states ACTIVE, EXITING, SLASHING.
-+    uint64 last_attested_slot = 9;
-+
-+    // The slot of the validator's last block proposal.
-+    // Only valid for states ACTIVE, EXITING, SLASHING.
-+    uint64 last_proposed_slot = 10;
-+}
