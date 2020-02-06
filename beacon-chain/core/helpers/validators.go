@@ -291,11 +291,8 @@ func IsEligibleForActivationQueueUsingTrie(validator *stateTrie.ReadOnlyValidato
 //        and validator.activation_epoch == FAR_FUTURE_EPOCH
 //    )
 func IsEligibleForActivation(state *stateTrie.BeaconState, validator *ethpb.Validator) bool {
-	cpt := state.FinalizedCheckpoint()
-	if cpt == nil {
-		return false
-	}
-	return validator.ActivationEligibilityEpoch <= cpt.Epoch &&
+	finalizedEpoch := state.FinalizedCheckpointEpoch()
+	return validator.ActivationEligibilityEpoch <= finalizedEpoch &&
 		validator.ActivationEpoch == params.BeaconConfig().FarFutureEpoch
 }
 
