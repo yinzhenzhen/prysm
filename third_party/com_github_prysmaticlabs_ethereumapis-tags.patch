@@ -498,3 +498,4 @@ index 9e19670..440e193 100644
  
      // The validators current effective balance in gwei.
      uint64 effective_balance = 3;
+
