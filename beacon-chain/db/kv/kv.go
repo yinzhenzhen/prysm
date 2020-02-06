@@ -21,7 +21,7 @@ const (
 	// NumOfVotes specifies the vote cache size.
 	NumOfVotes       = 1 << 20
 	databaseFileName = "beaconchain.db"
-	boltAllocSize    = 8 * 1024 * 1024
+	boltAllocSize    = 100 * 1024 * 1024
 )
 
 // BlockCacheSize specifies 1000 slots worth of blocks cached, which
