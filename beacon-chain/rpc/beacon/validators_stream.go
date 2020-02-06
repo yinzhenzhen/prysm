@@ -176,6 +176,11 @@ func (bs *Server) generateValidatorInfo(ctx context.Context, pubKeys [][]byte) (
 	// We are reporting on the state at the end of the *previous* epoch.
 	epoch--
 
+	// TODO: Determine validator duties here for the epoch so we can compute
+	// whether they attested/proposed.
+	// TODO: Determine validator duties here for next epoch so we can compute
+	// when they are next due to attest/propose.
+
 	// pendingValidatorsMap is map from the validator pubkey to the index in our return array
 	pendingValidatorsMap := make(map[[48]byte]int)
 	res := make([]*ethpb.ValidatorInfo, 0)
