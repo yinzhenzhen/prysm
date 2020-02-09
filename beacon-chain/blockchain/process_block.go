@@ -93,10 +93,6 @@ func (s *Service) onBlock(ctx context.Context, signed *ethpb.SignedBeaconBlock) 
 			return nil, errors.Wrapf(err, "could not save block from slot %d", b.Slot)
 		}
 
-		if err := s.insertBlockToForkChoiceStore(ctx, b, root, postState); err != nil {
-			return nil, errors.Wrapf(err, "could not insert block %d to fork choice store", b.Slot)
-		}
-
 		if err := s.beaconDB.SaveState(ctx, postState, root); err != nil {
 			return nil, errors.Wrap(err, "could not save state")
 		}
@@ -105,6 +101,10 @@ func (s *Service) onBlock(ctx context.Context, signed *ethpb.SignedBeaconBlock) 
 		if err := s.saveNewValidators(ctx, preStateValidatorCount, postState); err != nil {
 			return nil, errors.Wrap(err, "could not save finalized checkpoint")
 		}
+	}
+
+	if err := s.insertBlockToForkChoiceStore(ctx, b, root, postState); err != nil {
+		return nil, errors.Wrapf(err, "could not insert block %d to fork choice store", b.Slot)
 	}
 
 	// Update justified check point.
