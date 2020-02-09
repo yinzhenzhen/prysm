@@ -60,37 +60,51 @@ func (s *Service) onBlock(ctx context.Context, signed *ethpb.SignedBeaconBlock) 
 
 	b := signed.Block
 
-	// Retrieve incoming block's pre state.
-	preState, err := s.getBlockPreState(ctx, b)
-	if err != nil {
-		return nil, err
-	}
-	preStateValidatorCount := preState.NumValidators()
-
 	root, err := ssz.HashTreeRoot(b)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get signing root of block %d", b.Slot)
 	}
-	log.WithFields(logrus.Fields{
-		"slot": b.Slot,
-		"root": fmt.Sprintf("0x%s...", hex.EncodeToString(root[:])[:8]),
-	}).Info("Executing state transition on block")
 
-	postState, err := state.ExecuteStateTransition(ctx, preState, signed)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not execute state transition")
-	}
+	var postState *stateTrie.BeaconState
+	if s.beaconDB.HasState(ctx, root) {
+		postState, err = s.beaconDB.State(ctx, root)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get existing state")
+		}
+	} else {
+		// Retrieve incoming block's pre state.
+		preState, err := s.getBlockPreState(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+		preStateValidatorCount := preState.NumValidators()
 
-	if err := s.beaconDB.SaveBlock(ctx, signed); err != nil {
-		return nil, errors.Wrapf(err, "could not save block from slot %d", b.Slot)
-	}
+		log.WithFields(logrus.Fields{
+			"slot": b.Slot,
+			"root": fmt.Sprintf("0x%s...", hex.EncodeToString(root[:])[:8]),
+		}).Info("Executing state transition on block")
 
-	if err := s.insertBlockToForkChoiceStore(ctx, b, root, postState); err != nil {
-		return nil, errors.Wrapf(err, "could not insert block %d to fork choice store", b.Slot)
-	}
+		postState, err := state.ExecuteStateTransition(ctx, preState, signed)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not execute state transition")
+		}
 
-	if err := s.beaconDB.SaveState(ctx, postState, root); err != nil {
-		return nil, errors.Wrap(err, "could not save state")
+		if err := s.beaconDB.SaveBlock(ctx, signed); err != nil {
+			return nil, errors.Wrapf(err, "could not save block from slot %d", b.Slot)
+		}
+
+		if err := s.insertBlockToForkChoiceStore(ctx, b, root, postState); err != nil {
+			return nil, errors.Wrapf(err, "could not insert block %d to fork choice store", b.Slot)
+		}
+
+		if err := s.beaconDB.SaveState(ctx, postState, root); err != nil {
+			return nil, errors.Wrap(err, "could not save state")
+		}
+
+		// Update validator indices in database as needed.
+		if err := s.saveNewValidators(ctx, preStateValidatorCount, postState); err != nil {
+			return nil, errors.Wrap(err, "could not save finalized checkpoint")
+		}
 	}
 
 	// Update justified check point.
@@ -127,10 +141,6 @@ func (s *Service) onBlock(ctx context.Context, signed *ethpb.SignedBeaconBlock) 
 		}
 	}
 
-	// Update validator indices in database as needed.
-	if err := s.saveNewValidators(ctx, preStateValidatorCount, postState); err != nil {
-		return nil, errors.Wrap(err, "could not save finalized checkpoint")
-	}
 
 	// Epoch boundary bookkeeping such as logging epoch summaries.
 	if postState.Slot() >= s.nextEpochBoundarySlot {
