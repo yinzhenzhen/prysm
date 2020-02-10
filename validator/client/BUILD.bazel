@@ -26,6 +26,7 @@ go_library(
         "//shared/slotutil:go_default_library",
         "//validator/db:go_default_library",
         "//validator/keymanager:go_default_library",
+        "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_grpc_ecosystem_go_grpc_middleware//:go_default_library",
         "@com_github_grpc_ecosystem_go_grpc_middleware//tracing/opentracing:go_default_library",

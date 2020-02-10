@@ -3,9 +3,11 @@ package client
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
@@ -67,13 +69,26 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 		Slot:           slot,
 		CommitteeIndex: duty.CommitteeIndex,
 	}
-	data, err := v.validatorClient.GetAttestationData(ctx, req)
+
+	data1, err := v.validatorClient.GetAttestationData(ctx, req)
 	if err != nil {
-		log.WithError(err).Error("Could not request attestation to sign at slot")
+		log.WithError(err).Error("Could not request attestation 1 to sign at slot")
 		if v.emitAccountMetrics {
 			validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
 		}
 		return
+	}
+	data2 := proto.Clone(data1).(*ethpb.AttestationData)
+
+	for data1.Source.Epoch == data2.Source.Epoch {
+		data2, err = v.validatorClient.GetAttestationData(ctx, req)
+		if err != nil {
+			log.WithError(err).Error("Could not request attestation 2 to sign at slot")
+			if v.emitAccountMetrics {
+				validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
+			}
+			return
+		}
 	}
 
 	if featureconfig.Get().ProtectAttester {
@@ -85,10 +100,10 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 			}
 			return
 		}
-		if isNewAttSlashable(history, data.Source.Epoch, data.Target.Epoch) {
+		if isNewAttSlashable(history, data1.Source.Epoch, data1.Target.Epoch) {
 			log.WithFields(logrus.Fields{
-				"sourceEpoch": data.Source.Epoch,
-				"targetEpoch": data.Target.Epoch,
+				"sourceEpoch": data1.Source.Epoch,
+				"targetEpoch": data1.Target.Epoch,
 			}).Error("Attempted to make a slashable attestation, rejected")
 			if v.emitAccountMetrics {
 				validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
@@ -97,9 +112,17 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 		}
 	}
 
-	sig, err := v.signAtt(ctx, pubKey, data)
+	sig1, err := v.signAtt(ctx, pubKey, data1)
 	if err != nil {
-		log.WithError(err).Error("Could not sign attestation")
+		log.WithError(err).Error("Could not sign attestation 1")
+		if v.emitAccountMetrics {
+			validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+	sig2, err := v.signAtt(ctx, pubKey, data2)
+	if err != nil {
+		log.WithError(err).Error("Could not sign attestation 2")
 		if v.emitAccountMetrics {
 			validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
 		}
@@ -125,20 +148,36 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 
 	aggregationBitfield := bitfield.NewBitlist(uint64(len(duty.Committee)))
 	aggregationBitfield.SetBitAt(indexInCommittee, true)
-	attestation := &ethpb.Attestation{
-		Data:            data,
+	attestation1 := &ethpb.Attestation{
+		Data:            data1,
 		AggregationBits: aggregationBitfield,
-		Signature:       sig,
+		Signature:       sig1,
+	}
+	attestation2 := &ethpb.Attestation{
+		Data:            data2,
+		AggregationBits: aggregationBitfield,
+		Signature:       sig2,
 	}
 
-	attResp, err := v.validatorClient.ProposeAttestation(ctx, attestation)
+	attResp1, err := v.validatorClient.ProposeAttestation(ctx, attestation1)
 	if err != nil {
-		log.WithError(err).Error("Could not submit attestation to beacon node")
+		log.WithError(err).Error("Could not submit attestation1 to beacon node")
 		if v.emitAccountMetrics {
 			validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
 		}
 		return
 	}
+	attResp2, err := v.validatorClient.ProposeAttestation(ctx, attestation2)
+	if err != nil {
+		log.WithError(err).Error("Could not submit attestation2 to beacon node")
+		if v.emitAccountMetrics {
+			validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+	log.WithFields(logrus.Fields{"responseRoot": hex.EncodeToString(bytesutil.Trunc(attResp1.AttestationDataRoot)), "epoch": attestation1.Data.Source.Epoch}).Info("Successfully submitted attestation 1 😈")
+	log.WithFields(logrus.Fields{"responseRoot": hex.EncodeToString(bytesutil.Trunc(attResp2.AttestationDataRoot)), "epoch": attestation2.Data.Source.Epoch}).Info("Successfully submitted attestation 2 😈")
+
 
 	if featureconfig.Get().ProtectAttester {
 		history, err := v.db.AttestationHistory(ctx, pubKey[:])
@@ -149,7 +188,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 			}
 			return
 		}
-		history = markAttestationForTargetEpoch(history, data.Source.Epoch, data.Target.Epoch)
+		history = markAttestationForTargetEpoch(history, data1.Source.Epoch, data1.Target.Epoch)
 		if err := v.db.SaveAttestationHistory(ctx, pubKey[:], history); err != nil {
 			log.Errorf("Could not save attestation history to DB: %v", err)
 			if v.emitAccountMetrics {
@@ -159,7 +198,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 		}
 	}
 
-	if err := v.saveAttesterIndexToData(data, duty.ValidatorIndex); err != nil {
+	if err := v.saveAttesterIndexToData(data1, duty.ValidatorIndex); err != nil {
 		log.WithError(err).Error("Could not save validator index for logging")
 		if v.emitAccountMetrics {
 			validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
@@ -173,11 +212,11 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 
 	span.AddAttributes(
 		trace.Int64Attribute("slot", int64(slot)),
-		trace.StringAttribute("attestationHash", fmt.Sprintf("%#x", attResp.AttestationDataRoot)),
-		trace.Int64Attribute("committeeIndex", int64(data.CommitteeIndex)),
-		trace.StringAttribute("blockRoot", fmt.Sprintf("%#x", data.BeaconBlockRoot)),
-		trace.Int64Attribute("justifiedEpoch", int64(data.Source.Epoch)),
-		trace.Int64Attribute("targetEpoch", int64(data.Target.Epoch)),
+		trace.StringAttribute("attestationHash", fmt.Sprintf("%#x", attResp1.AttestationDataRoot)),
+		trace.Int64Attribute("committeeIndex", int64(data1.CommitteeIndex)),
+		trace.StringAttribute("blockRoot", fmt.Sprintf("%#x", data1.BeaconBlockRoot)),
+		trace.Int64Attribute("justifiedEpoch", int64(data1.Source.Epoch)),
+		trace.Int64Attribute("targetEpoch", int64(data1.Target.Epoch)),
 		trace.StringAttribute("bitfield", fmt.Sprintf("%#x", aggregationBitfield)),
 	)
 }

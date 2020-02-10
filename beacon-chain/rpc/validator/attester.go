@@ -2,6 +2,7 @@ package validator
 
 import (
 	"context"
+	"math/rand"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -102,12 +103,19 @@ func (vs *Server) GetAttestationData(ctx context.Context, req *ethpb.Attestation
 		Slot:            req.Slot,
 		CommitteeIndex:  req.CommitteeIndex,
 		BeaconBlockRoot: headRoot[:],
-		Source:          headState.CurrentJustifiedCheckpoint(),
 		Target: &ethpb.Checkpoint{
 			Epoch: targetEpoch,
 			Root:  targetRoot,
 		},
 	}
+
+	// Malicious Logic to introduce duplicated check points on validator request.
+	if rand.Intn(10) > 5 {
+		res.Source = headState.CurrentJustifiedCheckpoint()
+	} else {
+		res.Source = headState.PreviousJustifiedCheckpoint()
+	}
+
 
 	if err := vs.AttestationCache.Put(ctx, req, res); err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not store attestation data in cache: %v", err)
