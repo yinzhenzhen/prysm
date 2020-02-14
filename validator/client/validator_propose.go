@@ -69,12 +69,34 @@ func (v *validator) ProposeBlock(ctx context.Context, slot uint64, pubKey [48]by
 		}
 		return
 	}
-
-	// Request block from beacon node
-	b, err := v.validatorClient.GetBlock(ctx, &ethpb.BlockRequest{
+	b1, err := v.validatorClient.GetBlock(ctx, &ethpb.BlockRequest{
 		Slot:         slot,
 		RandaoReveal: randaoReveal,
-		Graffiti:     v.graffiti,
+		Graffiti:     []byte{'A'},
+	})
+	if err != nil {
+		log.WithError(err).Error("Failed to request block from beacon node")
+		if v.emitAccountMetrics {
+			validatorProposeFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+	b2, err := v.validatorClient.GetBlock(ctx, &ethpb.BlockRequest{
+		Slot:         slot,
+		RandaoReveal: randaoReveal,
+		Graffiti:     []byte{'B'},
+	})
+	if err != nil {
+		log.WithError(err).Error("Failed to request block from beacon node")
+		if v.emitAccountMetrics {
+			validatorProposeFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+	b3, err := v.validatorClient.GetBlock(ctx, &ethpb.BlockRequest{
+		Slot:         slot,
+		RandaoReveal: randaoReveal,
+		Graffiti:     []byte{'C'},
 	})
 	if err != nil {
 		log.WithError(err).Error("Failed to request block from beacon node")
@@ -103,8 +125,7 @@ func (v *validator) ProposeBlock(ctx context.Context, slot uint64, pubKey [48]by
 		}
 	}
 
-	// Sign returned block from beacon node
-	sig, err := v.signBlock(ctx, pubKey, epoch, b)
+	sig1, err := v.signBlock(ctx, pubKey, epoch, b1)
 	if err != nil {
 		log.WithError(err).Error("Failed to sign block")
 		if v.emitAccountMetrics {
@@ -112,13 +133,38 @@ func (v *validator) ProposeBlock(ctx context.Context, slot uint64, pubKey [48]by
 		}
 		return
 	}
-	blk := &ethpb.SignedBeaconBlock{
-		Block:     b,
-		Signature: sig,
+	blk1 := &ethpb.SignedBeaconBlock{
+		Block:     b1,
+		Signature: sig1,
 	}
 
+	sig2, err := v.signBlock(ctx, pubKey, epoch, b2)
+	if err != nil {
+		log.WithError(err).Error("Failed to sign block")
+		if v.emitAccountMetrics {
+			validatorProposeFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+	blk2 := &ethpb.SignedBeaconBlock{
+		Block:     b2,
+		Signature: sig2,
+	}
+
+	sig3, err := v.signBlock(ctx, pubKey, epoch, b3)
+	if err != nil {
+		log.WithError(err).Error("Failed to sign block")
+		if v.emitAccountMetrics {
+			validatorProposeFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+	blk3 := &ethpb.SignedBeaconBlock{
+		Block:     b3,
+		Signature: sig3,
+	}
 	// Propose and broadcast block via beacon node
-	blkResp, err := v.validatorClient.ProposeBlock(ctx, blk)
+	blkResp, err := v.validatorClient.ProposeBlock(ctx, blk1)
 	if err != nil {
 		log.WithError(err).Error("Failed to propose block")
 		if v.emitAccountMetrics {
@@ -126,6 +172,48 @@ func (v *validator) ProposeBlock(ctx context.Context, slot uint64, pubKey [48]by
 		}
 		return
 	}
+
+	blkRoot := fmt.Sprintf("%#x", bytesutil.Trunc(blkResp.BlockRoot))
+	log.WithFields(logrus.Fields{
+		"slot":            b1.Slot,
+		"blockRoot":       blkRoot,
+		"numAttestations": len(b1.Body.Attestations),
+		"numDeposits":     len(b1.Body.Deposits),
+	}).Info("Submitted new block 1 😈")
+
+	blkResp, err = v.validatorClient.ProposeBlock(ctx, blk2)
+	if err != nil {
+		log.WithError(err).Error("Failed to propose block")
+		if v.emitAccountMetrics {
+			validatorProposeFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+
+	blkRoot = fmt.Sprintf("%#x", bytesutil.Trunc(blkResp.BlockRoot))
+	log.WithFields(logrus.Fields{
+		"slot":            b1.Slot,
+		"blockRoot":       blkRoot,
+		"numAttestations": len(b1.Body.Attestations),
+		"numDeposits":     len(b1.Body.Deposits),
+	}).Info("Submitted new block 2 😈")
+
+	blkResp, err = v.validatorClient.ProposeBlock(ctx, blk3)
+	if err != nil {
+		log.WithError(err).Error("Failed to propose block")
+		if v.emitAccountMetrics {
+			validatorProposeFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+
+	blkRoot = fmt.Sprintf("%#x", bytesutil.Trunc(blkResp.BlockRoot))
+	log.WithFields(logrus.Fields{
+		"slot":            b1.Slot,
+		"blockRoot":       blkRoot,
+		"numAttestations": len(b1.Body.Attestations),
+		"numDeposits":     len(b1.Body.Deposits),
+	}).Info("Submitted new block 3 😈")
 
 	if featureconfig.Get().ProtectProposer {
 		history, err := v.db.ProposalHistory(ctx, pubKey[:])
@@ -150,19 +238,6 @@ func (v *validator) ProposeBlock(ctx context.Context, slot uint64, pubKey [48]by
 		validatorProposeSuccessVec.WithLabelValues(fmtKey).Inc()
 	}
 
-	span.AddAttributes(
-		trace.StringAttribute("blockRoot", fmt.Sprintf("%#x", blkResp.BlockRoot)),
-		trace.Int64Attribute("numDeposits", int64(len(b.Body.Deposits))),
-		trace.Int64Attribute("numAttestations", int64(len(b.Body.Attestations))),
-	)
-
-	blkRoot := fmt.Sprintf("%#x", bytesutil.Trunc(blkResp.BlockRoot))
-	log.WithFields(logrus.Fields{
-		"slot":            b.Slot,
-		"blockRoot":       blkRoot,
-		"numAttestations": len(b.Body.Attestations),
-		"numDeposits":     len(b.Body.Deposits),
-	}).Info("Submitted new block")
 }
 
 // ProposeExit --
