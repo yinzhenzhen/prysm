@@ -11,6 +11,7 @@ import (
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/prysmaticlabs/go-ssz"
+	"github.com/prysmaticlabs/prysm/beacon-chain/core/helpers"
 	slashpb "github.com/prysmaticlabs/prysm/proto/slashing"
 	"github.com/prysmaticlabs/prysm/shared/bytesutil"
 	"github.com/prysmaticlabs/prysm/shared/featureconfig"
@@ -95,6 +96,12 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 			}
 			return
 		}
+	}
+
+	// Every third slot of an epoch, we attest a surround vote.
+	if slot%params.BeaconConfig().SlotsPerEpoch == 3 {
+		// We attempt to surround an old attestation we created.
+		// For example, if we created an attestation at source 4 and target 5,
 	}
 
 	sig, err := v.signAtt(ctx, pubKey, data)
