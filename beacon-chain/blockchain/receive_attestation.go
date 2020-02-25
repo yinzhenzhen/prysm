@@ -69,7 +69,7 @@ func (s *Service) processAttestation() {
 		select {
 		case <-s.ctx.Done():
 			return
-		case <-st.C():
+		case slot := <-st.C():
 			ctx := context.Background()
 			atts := s.attPool.ForkchoiceAttestations()
 			for _, a := range atts {

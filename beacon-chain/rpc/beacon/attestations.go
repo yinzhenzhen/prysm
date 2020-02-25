@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"strconv"
+	"time"
 
 	ptypes "github.com/gogo/protobuf/types"
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
@@ -14,6 +15,7 @@ import (
 	"github.com/prysmaticlabs/prysm/shared/attestationutil"
 	"github.com/prysmaticlabs/prysm/shared/pagination"
 	"github.com/prysmaticlabs/prysm/shared/params"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -233,10 +235,12 @@ func (bs *Server) StreamAttestations(
 func (bs *Server) StreamIndexedAttestations(
 	_ *ptypes.Empty, stream ethpb.BeaconChain_StreamIndexedAttestationsServer,
 ) error {
+	tick := time.NewTicker(time.Second * time.Duration(params.BeaconConfig().SecondsPerSlot))
 	for {
 		select {
-		case slot := <-bs.SlotTicker.C():
-			epoch := helpers.SlotToEpoch(slot)
+		case <-tick.C:
+			epoch := helpers.SlotToEpoch(bs.GenesisTimeFetcher.CurrentSlot())
+			logrus.Infof("Ticking now for epoch %d", epoch)
 			atts := bs.AttestationsPool.AggregatedAttestations()
 			committeesBySlot, _, err := bs.retrieveCommitteesForEpoch(stream.Context(), epoch)
 			if err != nil {
@@ -253,6 +257,7 @@ func (bs *Server) StreamIndexedAttestations(
 			indexedAtts := make([]*ethpb.IndexedAttestation, numAttestations, numAttestations)
 			startSlot := helpers.StartSlot(epoch)
 			endSlot := startSlot + params.BeaconConfig().SlotsPerEpoch
+			logrus.Infof("Sending over %d indexed attestations", len(indexedAtts))
 			for i := 0; i < len(indexedAtts); i++ {
 				att := atts[i]
 				// Out of range check, the attestation slot cannot be greater

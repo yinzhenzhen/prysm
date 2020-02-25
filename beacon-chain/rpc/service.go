@@ -208,6 +208,7 @@ func (s *Service) Start() {
 	s.grpcServer = grpc.NewServer(opts...)
 
 	genesisTime := s.genesisTimeFetcher.GenesisTime()
+	log.Warn(genesisTime)
 	ticker := slotutil.GetSlotTicker(genesisTime, params.BeaconConfig().SecondsPerSlot)
 	validatorServer := &validator.Server{
 		Ctx:                    s.ctx,
