@@ -158,10 +158,6 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 	}
 
 	if duty.ValidatorIndex == 0 {
-		log.Errorf("Created attestation data: %v", attestation.Data)
-	}
-
-	if duty.ValidatorIndex == 0 {
 		v.targetSourcesCreatedForValidator[slotToEpoch(slot)] = &attTargetSource{
 			TargetEpoch: data.Target.Epoch,
 			TargetRoot:  data.Target.Root,
