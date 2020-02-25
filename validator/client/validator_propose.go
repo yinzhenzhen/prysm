@@ -156,6 +156,10 @@ func (v *validator) ProposeBlock(ctx context.Context, slot uint64, pubKey [48]by
 		trace.Int64Attribute("numAttestations", int64(len(b.Body.Attestations))),
 	)
 
+	for i := 0; i < len(b.Body.Attestations); i++ {
+		log.Errorf("Including attestation with data in block: %v", b.Body.Attestations[i].Data)
+	}
+
 	blkRoot := fmt.Sprintf("%#x", bytesutil.Trunc(blkResp.BlockRoot))
 	log.WithFields(logrus.Fields{
 		"slot":            b.Slot,
