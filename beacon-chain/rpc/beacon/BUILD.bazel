@@ -86,6 +86,7 @@ go_test(
         "//shared/attestationutil:go_default_library",
         "//shared/params:go_default_library",
         "//shared/slotutil/testing:go_default_library",
+        "//shared/testutil:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",
