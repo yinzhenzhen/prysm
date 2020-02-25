@@ -4,7 +4,6 @@ import (
 	"context"
 	"sort"
 	"strconv"
-	"time"
 
 	ptypes "github.com/gogo/protobuf/types"
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
@@ -235,11 +234,10 @@ func (bs *Server) StreamAttestations(
 func (bs *Server) StreamIndexedAttestations(
 	_ *ptypes.Empty, stream ethpb.BeaconChain_StreamIndexedAttestationsServer,
 ) error {
-	tick := time.NewTicker(time.Second * time.Duration(params.BeaconConfig().SecondsPerSlot))
 	for {
 		select {
-		case <-tick.C:
-			epoch := helpers.SlotToEpoch(bs.GenesisTimeFetcher.CurrentSlot())
+		case slot := <-bs.SlotTicker.C():
+			epoch := helpers.SlotToEpoch(slot)
 			logrus.Infof("Ticking now for epoch %d", epoch)
 			atts := bs.AttestationsPool.AggregatedAttestations()
 			committeesBySlot, _, err := bs.retrieveCommitteesForEpoch(stream.Context(), epoch)
