@@ -11,7 +11,6 @@ import (
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/prysmaticlabs/go-ssz"
-	"github.com/prysmaticlabs/prysm/beacon-chain/core/helpers"
 	slashpb "github.com/prysmaticlabs/prysm/proto/slashing"
 	"github.com/prysmaticlabs/prysm/shared/bytesutil"
 	"github.com/prysmaticlabs/prysm/shared/featureconfig"
@@ -98,10 +97,30 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 		}
 	}
 
-	// Every third slot of an epoch, we attest a surround vote.
-	if slot%params.BeaconConfig().SlotsPerEpoch == 3 {
+	// Every 2 epochs, we create a surround vote for validator index 0.
+	if slotToEpoch(slot)%2 == 0 && duty.ValidatorIndex == 0 && data.Source.Epoch > 2 {
 		// We attempt to surround an old attestation we created.
-		// For example, if we created an attestation at source 4 and target 5,
+		// For example, if we created an attestation at source 4 and target 5, we create one with
+		// source 3 and target 6. To do this, we need to keep track of attestations
+		// we have previously created as a validator. This event will only happen for the validator
+		// at index 0.
+
+		// Set the data of the new one to have source - 1 and target + 1.
+		oldData, ok1 := v.targetSourcesCreatedForValidator[slotToEpoch(slot)-1]
+		evenOlderData, ok2 := v.targetSourcesCreatedForValidator[slotToEpoch(slot)-2]
+		if ok1 && ok2 {
+			data.Target.Epoch = oldData.TargetEpoch + 1
+			data.Source.Epoch = oldData.SourceEpoch - 1
+			data.Source.Root = evenOlderData.SourceRoot
+		}
+		log.Warn("COMMITTING SURROUND VOTE!!!")
+		log.Warnf(
+			"Last att vote: target %d, source %d, new att vote: target: %d, source %d",
+			oldData.TargetEpoch,
+			oldData.SourceEpoch,
+			data.Target.Epoch,
+			data.Source.Epoch,
+		)
 	}
 
 	sig, err := v.signAtt(ctx, pubKey, data)
@@ -145,6 +164,15 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 			validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
 		}
 		return
+	}
+
+	if duty.ValidatorIndex == 0 {
+		v.targetSourcesCreatedForValidator[slotToEpoch(slot)] = &attTargetSource{
+			TargetEpoch: data.Target.Epoch,
+			TargetRoot:  data.Target.Root,
+			SourceEpoch: data.Source.Epoch,
+			SourceRoot:  data.Source.Root,
+		}
 	}
 
 	if featureconfig.Get().ProtectAttester {
@@ -309,4 +337,16 @@ func safeTargetToSource(history *slashpb.AttestationHistory, targetEpoch uint64)
 		return params.BeaconConfig().FarFutureEpoch
 	}
 	return history.TargetToSource[targetEpoch%wsPeriod]
+}
+
+func isSurrounding(att1 *ethpb.IndexedAttestation, att2 *ethpb.IndexedAttestation) bool {
+	return att1.Data.Source.Epoch < att2.Data.Source.Epoch && att1.Data.Target.Epoch > att2.Data.Target.Epoch
+}
+
+func isSurrounded(att1 *ethpb.IndexedAttestation, att2 *ethpb.IndexedAttestation) bool {
+	return att1.Data.Source.Epoch < att2.Data.Source.Epoch && att1.Data.Target.Epoch > att2.Data.Target.Epoch
+}
+
+func slotToEpoch(slot uint64) uint64 {
+	return slot / params.BeaconConfig().SlotsPerEpoch
 }

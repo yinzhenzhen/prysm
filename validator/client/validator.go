@@ -25,21 +25,29 @@ import (
 )
 
 type validator struct {
-	genesisTime          uint64
-	ticker               *slotutil.SlotTicker
-	db                   *db.Store
-	duties               *ethpb.DutiesResponse
-	validatorClient      ethpb.BeaconNodeValidatorClient
-	beaconClient         ethpb.BeaconChainClient
-	graffiti             []byte
-	aggregatorClient     pb.AggregatorServiceClient
-	node                 ethpb.NodeClient
-	keyManager           keymanager.KeyManager
-	prevBalance          map[[48]byte]uint64
-	logValidatorBalances bool
-	emitAccountMetrics   bool
-	attLogs              map[[32]byte]*attSubmitted
-	attLogsLock          sync.Mutex
+	genesisTime                      uint64
+	ticker                           *slotutil.SlotTicker
+	db                               *db.Store
+	duties                           *ethpb.DutiesResponse
+	validatorClient                  ethpb.BeaconNodeValidatorClient
+	beaconClient                     ethpb.BeaconChainClient
+	graffiti                         []byte
+	aggregatorClient                 pb.AggregatorServiceClient
+	node                             ethpb.NodeClient
+	keyManager                       keymanager.KeyManager
+	prevBalance                      map[[48]byte]uint64
+	logValidatorBalances             bool
+	emitAccountMetrics               bool
+	attLogs                          map[[32]byte]*attSubmitted
+	attLogsLock                      sync.Mutex
+	targetSourcesCreatedForValidator map[uint64]*attTargetSource
+}
+
+type attTargetSource struct {
+	TargetEpoch uint64
+	TargetRoot  []byte
+	SourceEpoch uint64
+	SourceRoot  []byte
 }
 
 // Done cleans up the validator.
