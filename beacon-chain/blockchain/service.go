@@ -136,6 +136,7 @@ func (s *Service) Start() {
 	if beaconState != nil {
 		log.Info("Blockchain data already exists in DB, initializing...")
 		s.genesisTime = time.Unix(int64(beaconState.GenesisTime()), 0)
+		go s.processAttestation()
 		if err := s.initializeChainInfo(ctx); err != nil {
 			log.Fatalf("Could not set up chain info: %v", err)
 		}
@@ -185,6 +186,7 @@ func (s *Service) Start() {
 						data := event.Data.(*statefeed.ChainStartedData)
 						log.WithField("starttime", data.StartTime).Debug("Received chain start event")
 						s.processChainStartTime(ctx, data.StartTime)
+						go s.processAttestation()
 						return
 					}
 				case <-s.ctx.Done():
@@ -198,7 +200,6 @@ func (s *Service) Start() {
 		}()
 	}
 
-	go s.processAttestation()
 }
 
 // processChainStartTime initializes a series of deposits from the ChainStart deposits in the eth1

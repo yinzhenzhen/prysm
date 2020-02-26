@@ -8,6 +8,7 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 	"github.com/prysmaticlabs/prysm/beacon-chain/cache"
 	"github.com/prysmaticlabs/prysm/beacon-chain/core/feed"
+	"github.com/prysmaticlabs/prysm/beacon-chain/core/feed/operation"
 	statefeed "github.com/prysmaticlabs/prysm/beacon-chain/core/feed/state"
 	"github.com/prysmaticlabs/prysm/beacon-chain/core/helpers"
 	"github.com/prysmaticlabs/prysm/beacon-chain/core/state"
@@ -17,6 +18,7 @@ import (
 	"github.com/prysmaticlabs/prysm/shared/params"
 	"github.com/prysmaticlabs/prysm/shared/roughtime"
 	"github.com/prysmaticlabs/prysm/shared/slotutil"
+	"github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -126,6 +128,16 @@ func (vs *Server) ProposeAttestation(ctx context.Context, att *ethpb.Attestation
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not tree hash attestation: %v", err)
 	}
+
+	// Broadcast the unaggregated attestation on a feed to notify other services in the beacon node
+	// of a received unaggregated attestation.
+	vs.OperationNotifier.OperationFeed().Send(&feed.Event{
+		Type: operation.UnaggregatedAttReceived,
+		Data: &operation.UnAggregatedAttReceivedData{
+			Attestation: att,
+		},
+	})
+	logrus.Info("Sent over stream")
 
 	// Broadcast the new attestation to the network.
 	if err := vs.P2P.Broadcast(ctx, att); err != nil {
