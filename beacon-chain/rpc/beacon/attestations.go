@@ -16,7 +16,6 @@ import (
 	"github.com/prysmaticlabs/prysm/shared/attestationutil"
 	"github.com/prysmaticlabs/prysm/shared/pagination"
 	"github.com/prysmaticlabs/prysm/shared/params"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -250,12 +249,10 @@ func (bs *Server) StreamIndexedAttestations(
 	attestationsChannel := make(chan *feed.Event, 1)
 	attSub := bs.AttestationNotifier.OperationFeed().Subscribe(attestationsChannel)
 	defer attSub.Unsubscribe()
-	logrus.Info("Initiating stream to attestations")
 	for {
 		select {
 		case event := <-attestationsChannel:
 			if event.Type == operation.UnaggregatedAttReceived {
-				logrus.Info("Event received")
 				data, ok := event.Data.(*operation.UnAggregatedAttReceivedData)
 				if !ok {
 					// Got bad data over the stream.
@@ -265,7 +262,6 @@ func (bs *Server) StreamIndexedAttestations(
 					// One nil attestation shouldn't stop the stream.
 					continue
 				}
-				logrus.Info("Creating indexed")
 				epoch := helpers.SlotToEpoch(bs.HeadFetcher.HeadSlot())
 				committeesBySlot, _, err := bs.retrieveCommitteesForEpoch(stream.Context(), epoch)
 				if err != nil {

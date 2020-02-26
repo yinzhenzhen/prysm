@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
+	"github.com/prysmaticlabs/prysm/shared/sliceutil"
 	"github.com/prysmaticlabs/prysm/slasher/detection/attestations"
 )
 
@@ -22,6 +23,9 @@ func (ds *Service) detectAttesterSlashings(
 		doubleAttSlashings, err := ds.detectDoubleVotes(ctx, att)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not detect double votes on attestation")
+		}
+		if len(surroundedAttSlashings) > 0 {
+			log.Infof("Found %d slashings for val idx %d", len(surroundedAttSlashings), valIdx)
 		}
 		newSlashings := append(surroundedAttSlashings, doubleAttSlashings...)
 		slashings = append(slashings, newSlashings...)
@@ -73,11 +77,14 @@ func (ds *Service) detectSurroundVotes(
 		if att.Data == nil {
 			continue
 		}
-		if isSurrounding(incomingAtt, att) || isSurrounded(incomingAtt, att) {
-			slashings = append(slashings, &ethpb.AttesterSlashing{
-				Attestation_1: incomingAtt,
-				Attestation_2: att,
-			})
+		if len(sliceutil.IntersectionUint64(att.AttestingIndices, incomingAtt.AttestingIndices)) > 0 {
+			if isSurrounding(incomingAtt, att) || isSurrounded(incomingAtt, att) {
+				slashings = append(slashings, &ethpb.AttesterSlashing{
+					Attestation_1: incomingAtt,
+					Attestation_2: att,
+				})
+				log.Warnf("Found a surround vote: %v", slashings)
+			}
 		}
 	}
 	return slashings, nil

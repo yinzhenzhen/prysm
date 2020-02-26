@@ -18,7 +18,6 @@ import (
 	"github.com/prysmaticlabs/prysm/shared/params"
 	"github.com/prysmaticlabs/prysm/shared/roughtime"
 	"github.com/prysmaticlabs/prysm/shared/slotutil"
-	"github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -137,7 +136,6 @@ func (vs *Server) ProposeAttestation(ctx context.Context, att *ethpb.Attestation
 			Attestation: att,
 		},
 	})
-	logrus.Info("Sent over stream")
 
 	// Broadcast the new attestation to the network.
 	if err := vs.P2P.Broadcast(ctx, att); err != nil {
