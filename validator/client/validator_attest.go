@@ -99,6 +99,32 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 		}
 	}
 
+	// Every 2 epochs, we create a surround vote for validator index 0.
+	if slotToEpoch(slot)%2 == 0 && duty.ValidatorIndex == 0 && data.Source.Epoch > 2 {
+		// We attempt to surround an old attestation we created.
+		// For example, if we created an attestation at source 4 and target 5, we create one with
+		// source 3 and target 6. To do this, we need to keep track of attestations
+		// we have previously created as a validator. This event will only happen for the validator
+		// at index 0.
+
+		// Set the data of the new one to have source - 1 and target + 1.
+		oldData, ok1 := v.targetSourcesCreatedForValidator[slotToEpoch(slot)-1]
+		evenOlderData, ok2 := v.targetSourcesCreatedForValidator[slotToEpoch(slot)-2]
+		if ok1 && ok2 {
+			data.Target.Epoch = oldData.TargetEpoch + 1
+			data.Source.Epoch = oldData.SourceEpoch - 1
+			data.Source.Root = evenOlderData.SourceRoot
+		}
+		log.Error("COMMITTING SURROUND VOTE!!!")
+		log.Errorf(
+			"Last att vote: target %d, source %d, new att vote: target: %d, source %d",
+			oldData.TargetEpoch,
+			oldData.SourceEpoch,
+			data.Target.Epoch,
+			data.Source.Epoch,
+		)
+	}
+
 	sig, err := v.signAtt(ctx, pubKey, data)
 	if err != nil {
 		log.WithError(err).Error("Could not sign attestation")
@@ -131,6 +157,15 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 		Data:            data,
 		AggregationBits: aggregationBitfield,
 		Signature:       sig,
+	}
+
+	if duty.ValidatorIndex == 0 {
+		v.targetSourcesCreatedForValidator[slotToEpoch(slot)] = &attTargetSource{
+			TargetEpoch: data.Target.Epoch,
+			TargetRoot:  data.Target.Root,
+			SourceEpoch: data.Source.Epoch,
+			SourceRoot:  data.Source.Root,
+		}
 	}
 
 	attResp, err := v.validatorClient.ProposeAttestation(ctx, attestation)
@@ -306,4 +341,8 @@ func safeTargetToSource(history *slashpb.AttestationHistory, targetEpoch uint64)
 		return params.BeaconConfig().FarFutureEpoch
 	}
 	return history.TargetToSource[targetEpoch%wsPeriod]
+}
+
+func slotToEpoch(slot uint64) uint64 {
+	return slot / params.BeaconConfig().SlotsPerEpoch
 }

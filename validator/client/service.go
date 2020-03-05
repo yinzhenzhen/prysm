@@ -143,17 +143,18 @@ func (v *ValidatorService) Start() {
 	}
 
 	v.validator = &validator{
-		db:                   valDB,
-		validatorClient:      ethpb.NewBeaconNodeValidatorClient(v.conn),
-		beaconClient:         ethpb.NewBeaconChainClient(v.conn),
-		node:                 ethpb.NewNodeClient(v.conn),
-		keyManager:           v.keyManager,
-		graffiti:             v.graffiti,
-		logValidatorBalances: v.logValidatorBalances,
-		emitAccountMetrics:   v.emitAccountMetrics,
-		prevBalance:          make(map[[48]byte]uint64),
-		attLogs:              make(map[[32]byte]*attSubmitted),
-		domainDataCache:      cache,
+		db:                               valDB,
+		validatorClient:                  ethpb.NewBeaconNodeValidatorClient(v.conn),
+		beaconClient:                     ethpb.NewBeaconChainClient(v.conn),
+		node:                             ethpb.NewNodeClient(v.conn),
+		keyManager:                       v.keyManager,
+		graffiti:                         v.graffiti,
+		logValidatorBalances:             v.logValidatorBalances,
+		emitAccountMetrics:               v.emitAccountMetrics,
+		prevBalance:                      make(map[[48]byte]uint64),
+		attLogs:                          make(map[[32]byte]*attSubmitted),
+		domainDataCache:                  cache,
+		targetSourcesCreatedForValidator: make(map[uint64]*attTargetSource),
 	}
 	go run(v.ctx, v.validator)
 }
