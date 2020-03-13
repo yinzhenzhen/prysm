@@ -142,6 +142,29 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot uint64, pubKey [
 		return
 	}
 
+	badRoot := make([]byte, 32)
+	copy(badRoot, "muhaaha")
+	attestation.Data.BeaconBlockRoot = badRoot
+	sig, err = v.signAtt(ctx, pubKey, attestation.Data)
+	if err != nil {
+		log.WithError(err).Error("Could not sign attestation")
+		if v.emitAccountMetrics {
+			validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+
+	attestation.Signature = sig
+
+	attResp, err = v.validatorClient.ProposeAttestation(ctx, attestation)
+	if err != nil {
+		log.WithError(err).Error("Could not submit attestation to beacon node")
+		if v.emitAccountMetrics {
+			validatorAttestFailVec.WithLabelValues(fmtKey).Inc()
+		}
+		return
+	}
+
 	if featureconfig.Get().ProtectAttester {
 		history, err := v.db.AttestationHistory(ctx, pubKey[:])
 		if err != nil {
