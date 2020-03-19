@@ -181,6 +181,7 @@ func CalculateStateRoot(
 		return [32]byte{}, errors.Wrap(err, "could not process block")
 	}
 
+	fmt.Println("Before compute state root...")
 	return state.HashTreeRoot()
 }
 

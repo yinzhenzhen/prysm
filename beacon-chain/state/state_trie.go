@@ -186,25 +186,25 @@ func (b *BeaconState) HashTreeRoot() ([32]byte, error) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
-	if b.merkleLayers == nil || len(b.merkleLayers) == 0 {
-		fieldRoots, err := stateutil.ComputeFieldRoots(b.state)
-		if err != nil {
-			return [32]byte{}, err
-		}
-		layers := merkleize(fieldRoots)
-		b.merkleLayers = layers
-		b.dirtyFields = make(map[fieldIndex]interface{})
+	//if b.merkleLayers == nil || len(b.merkleLayers) == 0 {
+	fieldRoots, err := stateutil.ComputeFieldRoots(b.state)
+	if err != nil {
+		return [32]byte{}, err
 	}
+	layers := merkleize(fieldRoots)
+	b.merkleLayers = layers
+	b.dirtyFields = make(map[fieldIndex]interface{})
+	//}
 
-	for field := range b.dirtyFields {
-		root, err := b.rootSelector(field)
-		if err != nil {
-			return [32]byte{}, err
-		}
-		b.merkleLayers[0][field] = root[:]
-		b.recomputeRoot(int(field))
-		delete(b.dirtyFields, field)
-	}
+	//for field := range b.dirtyFields {
+	//	root, err := b.rootSelector(field)
+	//	if err != nil {
+	//		return [32]byte{}, err
+	//	}
+	//	b.merkleLayers[0][field] = root[:]
+	//	b.recomputeRoot(int(field))
+	//	delete(b.dirtyFields, field)
+	//}
 	return bytesutil.ToBytes32(b.merkleLayers[len(b.merkleLayers)-1][0]), nil
 }
 
