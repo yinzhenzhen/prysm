@@ -122,7 +122,7 @@ func (v *validator) signSlot(ctx context.Context, pubKey [48]byte, slot uint64) 
 	return sig.Marshal(), nil
 }
 
-// waitToSlotTwoThirds waits until two third through the current slot period
+// waitToSlotTwoThirds waits until two thirds through the current slot period
 // such that any attestations from this slot have time to reach the beacon node
 // before creating the aggregated attestation.
 func (v *validator) waitToSlotTwoThirds(ctx context.Context, slot uint64) {
@@ -131,6 +131,21 @@ func (v *validator) waitToSlotTwoThirds(ctx context.Context, slot uint64) {
 
 	twoThird := params.BeaconConfig().SecondsPerSlot * 2 / 3
 	delay := time.Duration(twoThird) * time.Second
+
+	startTime := slotutil.SlotStartTime(v.genesisTime, slot)
+	finalTime := startTime.Add(delay)
+	time.Sleep(roughtime.Until(finalTime))
+}
+
+// waitToSlotOneThird waits until one third through the current slot period
+// such that any block from this slot have time to reach the beacon node
+// before creating the attestation.
+func (v *validator) waitToSlotOneThird(ctx context.Context, slot uint64) {
+	_, span := trace.StartSpan(ctx, "validator.waitToSlotTwoThirds")
+	defer span.End()
+
+	oneThird := params.BeaconConfig().SecondsPerSlot * 1 / 3
+	delay := time.Duration(oneThird) * time.Second
 
 	startTime := slotutil.SlotStartTime(v.genesisTime, slot)
 	finalTime := startTime.Add(delay)
