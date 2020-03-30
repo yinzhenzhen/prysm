@@ -59,7 +59,7 @@ func (as *Server) SubmitAggregateSelectionProof(ctx context.Context, req *ethpb.
 
 	// Filter out the best aggregated attestation (ie. the one with the most aggregated bits).
 	if len(aggregatedAtts) == 0 {
-		return nil, status.Error(codes.Internal, "No aggregated attestation in beacon node")
+		return nil, status.Errorf(codes.Internal, "No aggregated attestation in beacon node for slot %d, comm index %d", req.Slot, req.CommitteeIndex)
 	}
 	best := aggregatedAtts[0]
 	for _, aggregatedAtt := range aggregatedAtts[1:] {

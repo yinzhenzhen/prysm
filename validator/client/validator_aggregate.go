@@ -73,6 +73,7 @@ func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot uint64, pu
 	// https://github.com/ethereum/eth2.0-specs/blob/v0.9.3/specs/validator/0_beacon-chain-validator.md#broadcast-aggregate
 	v.waitToSlotTwoThirds(ctx, slot)
 
+	log.Infof("Submitting aggregate and proof, slot %d, committee index %d", slot, duty.CommitteeIndex)
 	res, err := v.validatorClient.SubmitAggregateSelectionProof(ctx, &ethpb.AggregateSelectionRequest{
 		Slot:           slot,
 		CommitteeIndex: duty.CommitteeIndex,
