@@ -43,6 +43,7 @@ func (r *Service) noopValidator(ctx context.Context, _ peer.ID, msg *pubsub.Mess
 // Register PubSub subscribers
 func (r *Service) registerSubscribers() {
 	// Wait until chain start.
+	log.Info("Waiting for chainstart in register subscribers...")
 	stateChannel := make(chan *feed.Event, 1)
 	stateSub := r.stateNotifier.StateFeed().Subscribe(stateChannel)
 	defer stateSub.Unsubscribe()
@@ -51,10 +52,12 @@ func (r *Service) registerSubscribers() {
 		case event := <-stateChannel:
 			if event.Type == statefeed.Initialized {
 				data := event.Data.(*statefeed.InitializedData)
+				log.Info("Got state initialized event")
 				log.WithField("starttime", data.StartTime).Debug("Received state initialized event")
 				if data.StartTime.After(roughtime.Now()) {
 					stateSub.Unsubscribe()
 					time.Sleep(roughtime.Until(data.StartTime))
+					log.Info("Unsubscribed from state feed")
 				}
 				r.chainStarted = true
 			}
@@ -221,6 +224,7 @@ func (r *Service) subscribeDynamicWithSubnets(
 	}
 	subscriptions := make(map[uint64]*pubsub.Subscription, params.BeaconConfig().MaxCommitteesPerSlot)
 
+	log.Info("Waiting for state feed in subscribe dynamic with subnets")
 	stateChannel := make(chan *feed.Event, 1)
 	stateSub := r.stateNotifier.StateFeed().Subscribe(stateChannel)
 	go func() {
@@ -230,7 +234,9 @@ func (r *Service) subscribeDynamicWithSubnets(
 				stateSub.Unsubscribe()
 				return
 			case <-stateChannel:
+				log.Info("Got item over state feed in subscribe dynamic")
 				if r.chainStarted && r.initialSync.Syncing() {
+					log.Info("Chain started and r.initialSync.Syncing() is true")
 					continue
 				}
 				// Update desired topic indices.
@@ -258,8 +264,8 @@ func (r *Service) subscribeDynamicWithSubnets(
 						subnetTopic := fmt.Sprintf(topic, digest, idx)
 						numOfPeers := r.p2p.PubSub().ListPeers(subnetTopic)
 						if len(r.p2p.Peers().SubscribedToSubnet(idx)) == 0 && len(numOfPeers) == 0 {
-							log.Debugf("No peers found subscribed to attestation gossip subnet with "+
-								"committee index %d. Searching network for peers subscribed to the subnet.", idx)
+							//log.Debugf("No peers found subscribed to attestation gossip subnet with "+
+							//	"committee index %d. Searching network for peers subscribed to the subnet.", idx)
 							go func(idx uint64) {
 								peerExists, err := r.p2p.FindPeersWithSubnet(idx)
 								if err != nil {

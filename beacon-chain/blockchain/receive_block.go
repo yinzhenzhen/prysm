@@ -153,6 +153,7 @@ func (s *Service) ReceiveBlockNoPubsubForkchoice(ctx context.Context, block *eth
 		}
 	}
 
+	log.Infof("ReceiveBlockNoPubsubForkChoice sending block over state feed: slot %d", blockCopy.Block.Slot)
 	// Send notification of the processed block to the state feed.
 	s.stateNotifier.StateFeed().Send(&feed.Event{
 		Type: statefeed.BlockProcessed,
@@ -162,6 +163,7 @@ func (s *Service) ReceiveBlockNoPubsubForkchoice(ctx context.Context, block *eth
 			Verified:  true,
 		},
 	})
+	log.Info("ReceiveBlockNoPubsubForkChoice finished sending over state feed")
 
 	// Reports on block and fork choice metrics.
 	reportSlotMetrics(blockCopy.Block.Slot, s.headSlot(), s.finalizedCheckpt)
@@ -209,6 +211,7 @@ func (s *Service) ReceiveBlockNoVerify(ctx context.Context, block *ethpb.SignedB
 		}
 	}
 
+	log.Infof("ReceiveBlockNoVerify sending block over state feed: slot %d", blockCopy.Block.Slot)
 	// Send notification of the processed block to the state feed.
 	s.stateNotifier.StateFeed().Send(&feed.Event{
 		Type: statefeed.BlockProcessed,
@@ -218,6 +221,7 @@ func (s *Service) ReceiveBlockNoVerify(ctx context.Context, block *ethpb.SignedB
 			Verified:  false,
 		},
 	})
+	log.Infof("ReceiveBlockNoVerify finished sending over state feed")
 
 	// Reports on blockCopy and fork choice metrics.
 	reportSlotMetrics(blockCopy.Block.Slot, s.headSlot(), s.finalizedCheckpt)
