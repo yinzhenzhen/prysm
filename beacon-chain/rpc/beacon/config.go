@@ -8,6 +8,8 @@ import (
 	ptypes "github.com/gogo/protobuf/types"
 	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
 	"github.com/prysmaticlabs/prysm/shared/params"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // GetBeaconConfig retrieves the current configuration parameters of the beacon chain.
@@ -22,4 +24,9 @@ func (bs *Server) GetBeaconConfig(ctx context.Context, _ *ptypes.Empty) (*ethpb.
 	return &ethpb.BeaconConfig{
 		Config: res,
 	}, nil
+}
+
+// GetChainInfo --
+func (bs *Server) GetChainInfo(ctx context.Context, _ *ptypes.Empty) (*ethpb.ChainInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
 }

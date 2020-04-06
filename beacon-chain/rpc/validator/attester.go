@@ -180,12 +180,13 @@ func (vs *Server) ProposeAttestation(ctx context.Context, att *ethpb.Attestation
 }
 
 // SubscribeCommitteeSubnet subscribes to the committee ID subnet given subscribe request.
-func (vs *Server) SubscribeCommitteeSubnet(ctx context.Context, req *ethpb.CommitteeSubnetSubscribeRequest) (*ptypes.Empty, error) {
-	cache.CommitteeIDs.AddAttesterCommiteeID(req.Slot, req.CommitteeId)
-
-	if req.IsAggregator {
-		cache.CommitteeIDs.AddAggregatorCommiteeID(req.Slot, req.CommitteeId)
-	}
-
-	return &ptypes.Empty{}, nil
+func (vs *Server) SubscribeCommitteeSubnets(ctx context.Context, req *ethpb.CommitteeSubnetsSubscribeRequest) (*ptypes.Empty, error) {
+	//cache.CommitteeIDs.AddAttesterCommiteeID(req.Slot, req.CommitteeId)
+	//
+	//if req.IsAggregator {
+	//	cache.CommitteeIDs.AddAggregatorCommiteeID(req.Slot, req.CommitteeId)
+	//}
+	//
+	//return &ptypes.Empty{}, nil
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
 }

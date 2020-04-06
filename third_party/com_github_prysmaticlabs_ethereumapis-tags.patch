@@ -1,3 +1,38 @@
+diff --git a/WORKSPACE b/WORKSPACE
+index f55bd4d..515a9fd 100644
+--- a/WORKSPACE
++++ b/WORKSPACE
+@@ -5,6 +5,7 @@ workspace(name = "prysmaticlabs_ethereumapis")
+ ##############################################################################
+ 
+ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
++load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+ 
+ http_archive(
+     name = "io_bazel_rules_go",
+@@ -51,3 +52,22 @@ go_repository(
+     commit = "51d6538a90f86fe93ac480b35f37b2be17fef232",
+     importpath = "gopkg.in/yaml.v2",
+ )
++
++git_repository(
++    name = "com_github_gogo_protobuf",
++    commit = "5628607bb4c51c3157aacc3a50f0ab707582b805",
++    patch_args = ["-p1"],
++    patches = [
++        "@io_bazel_rules_go//third_party:com_github_gogo_protobuf-gazelle.patch",
++        "//third_party:com_github_gogo_protobuf-equal.patch",
++    ],
++    remote = "https://github.com/gogo/protobuf",
++    shallow_since = "1567336231 +0200",
++    # gazelle args: -go_prefix github.com/gogo/protobuf -proto legacy
++)
++
++go_repository(
++    name = "com_github_prysmaticlabs_go_bitfield",
++    commit = "dbb55b15e92f897ee230360c8d9695e2f224b117",
++    importpath = "github.com/prysmaticlabs/go-bitfield",
++)
 diff --git a/eth/v1alpha1/BUILD.bazel b/eth/v1alpha1/BUILD.bazel
 index c0fbe31..1211829 100644
 --- a/eth/v1alpha1/BUILD.bazel
@@ -307,7 +342,7 @@ index ece6613..f396a77 100644
 +    bytes signature = 3 [(gogoproto.moretags) = "ssz-size:\"96\""];
  }
 diff --git a/eth/v1alpha1/beacon_chain.proto b/eth/v1alpha1/beacon_chain.proto
-index 8ee263b..60607de 100644
+index a079eac..00e1c1f 100644
 --- a/eth/v1alpha1/beacon_chain.proto
 +++ b/eth/v1alpha1/beacon_chain.proto
 @@ -15,6 +15,7 @@ syntax = "proto3";
@@ -317,8 +352,8 @@ index 8ee263b..60607de 100644
 +import "github.com/gogo/protobuf/gogoproto/gogo.proto";
  import "google/api/annotations.proto";
  import "google/protobuf/empty.proto";
- import "google/protobuf/any.proto";
-@@ -398,7 +399,7 @@ message ChainHead {
+ import "google/protobuf/timestamp.proto";
+@@ -468,7 +469,7 @@ message ChainHead {
      uint64 head_epoch = 2;
  
      // 32 byte merkle tree root of the canonical head block in the beacon node.
@@ -327,7 +362,7 @@ index 8ee263b..60607de 100644
  
      // Most recent slot that contains the finalized block.
      uint64 finalized_slot = 4;
-@@ -407,7 +408,7 @@ message ChainHead {
+@@ -477,7 +478,7 @@ message ChainHead {
      uint64 finalized_epoch = 5;
      
      // Most recent 32 byte finalized block root.
@@ -336,7 +371,7 @@ index 8ee263b..60607de 100644
  
      // Most recent slot that contains the justified block.
      uint64 justified_slot = 7;
-@@ -416,7 +417,7 @@ message ChainHead {
+@@ -486,7 +487,7 @@ message ChainHead {
      uint64 justified_epoch = 8;
      
      // Most recent 32 byte justified block root.
@@ -345,7 +380,7 @@ index 8ee263b..60607de 100644
  
      // Most recent slot that contains the previous justified block.
      uint64 previous_justified_slot = 10;
-@@ -425,7 +426,7 @@ message ChainHead {
+@@ -495,7 +496,7 @@ message ChainHead {
      uint64 previous_justified_epoch = 11;
  
      // Previous 32 byte justified block root.
@@ -354,7 +389,7 @@ index 8ee263b..60607de 100644
  }
  
  message ListCommitteesRequest {
-@@ -470,7 +471,7 @@ message ListValidatorBalancesRequest {
+@@ -540,7 +541,7 @@ message ListValidatorBalancesRequest {
  
      // Validator 48 byte BLS public keys to filter validators for the given
      // epoch.
@@ -363,7 +398,7 @@ index 8ee263b..60607de 100644
          
      // Validator indices to filter validators for the given epoch.
      repeated uint64 indices = 4;
-@@ -491,7 +492,7 @@ message ValidatorBalances {
+@@ -561,7 +562,7 @@ message ValidatorBalances {
  
      message Balance {
          // Validator's 48 byte BLS public key.
@@ -372,7 +407,7 @@ index 8ee263b..60607de 100644
  
          // Validator's index in the validator set.
          uint64 index = 2;
-@@ -548,7 +549,7 @@ message GetValidatorRequest {
+@@ -618,7 +619,7 @@ message GetValidatorRequest {
          uint64 index = 1;
  
          // 48 byte validator public key.
@@ -381,7 +416,7 @@ index 8ee263b..60607de 100644
      }
  }
  
-@@ -590,26 +591,25 @@ message ActiveSetChanges {
+@@ -660,26 +661,25 @@ message ActiveSetChanges {
      uint64 epoch = 1;
  
      // 48 byte validator public keys that have been activated in the given epoch.
@@ -414,7 +449,7 @@ index 8ee263b..60607de 100644
  
      // Indices of validators ejected in the given epoch.
      repeated uint64 ejected_indices = 9;
-@@ -659,11 +659,11 @@ message ValidatorQueue {
+@@ -729,11 +729,11 @@ message ValidatorQueue {
  
      // Ordered list of 48 byte public keys awaiting activation. 0th index is the
      // next key to be processed.
@@ -428,7 +463,7 @@ index 8ee263b..60607de 100644
  }
  
  message ListValidatorAssignmentsRequest {
-@@ -675,7 +675,7 @@ message ListValidatorAssignmentsRequest {
+@@ -745,7 +745,7 @@ message ListValidatorAssignmentsRequest {
          bool genesis = 2;
      }
      // 48 byte validator public keys to filter assignments for the given epoch.
@@ -437,7 +472,7 @@ index 8ee263b..60607de 100644
          
      // Validator indicies to filter assignments for the given epoch.
      repeated uint64 indices = 4;
-@@ -710,7 +710,7 @@ message ValidatorAssignments {
+@@ -780,7 +780,7 @@ message ValidatorAssignments {
          uint64 proposer_slot = 4;
  
          // 48 byte BLS public key.
@@ -447,7 +482,7 @@ index 8ee263b..60607de 100644
  
      // The epoch for which this set of validator assignments is valid.
 diff --git a/eth/v1alpha1/validator.proto b/eth/v1alpha1/validator.proto
-index 3455de7..f4fab59 100644
+index 3bc824b..53cd49b 100644
 --- a/eth/v1alpha1/validator.proto
 +++ b/eth/v1alpha1/validator.proto
 @@ -15,6 +15,7 @@ syntax = "proto3";
@@ -553,8 +588,8 @@ index 3455de7..f4fab59 100644
 +    bytes attestation_data_root = 1  [(gogoproto.moretags) = "ssz-size:\"32\""];
  }
  
- message CommitteeSubnetSubscribeRequest {
-@@ -381,10 +383,10 @@ message CommitteeSubnetSubscribeRequest {
+ message CommitteeSubnetsSubscribeRequest {
+@@ -382,10 +384,10 @@ message CommitteeSubnetsSubscribeRequest {
  // An Ethereum 2.0 validator.
  message Validator {
      // 48 byte BLS public key used for the validator's activities.
@@ -567,3 +602,30 @@ index 3455de7..f4fab59 100644
  
      // The validators current effective balance in gwei.
      uint64 effective_balance = 3;
+diff --git a/third_party/com_github_gogo_protobuf-equal.patch b/third_party/com_github_gogo_protobuf-equal.patch
+new file mode 100644
+index 0000000..4bf05db
+--- /dev/null
++++ b/third_party/com_github_gogo_protobuf-equal.patch
+@@ -0,0 +1,21 @@
++t a/proto/equal.go b/proto/equal.go
++index d4db5a1c..649100f9 100644
++--- a/proto/equal.go
+++++ b/proto/equal.go
++@@ -202,6 +202,15 @@ func equalAny(v1, v2 reflect.Value, prop *Properties) bool {
++ 			if v1.IsNil() != v2.IsNil() {
++ 				return false
++ 			}
+++			// Edge case: if field is a cast type of []byte, special conversion
+++			// to []byte is required for bytes.Equal.
+++			if v1.Type() != reflect.TypeOf([]byte{}) {
+++				w1 := reflect.New(reflect.TypeOf([]byte{})).Elem()
+++				w2 := reflect.New(reflect.TypeOf([]byte{})).Elem()
+++				w1.Set(v1)
+++				w2.Set(v2)
+++				return bytes.Equal(w1.Interface().([]byte), w2.Interface().([]byte))
+++			}
++ 			return bytes.Equal(v1.Interface().([]byte), v2.Interface().([]byte))
++ 		}
++ 
++
