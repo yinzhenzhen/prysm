@@ -58,9 +58,16 @@ func (as *Server) SubmitAggregateSelectionProof(ctx context.Context, req *ethpb.
 	unaggregatedAtts := as.AttPool.UnAggregatedAttestationsBySlotIndex(req.Slot, req.CommitteeIndex)
 	// In case there's left over aggregated attestations in the pool.
 	aggregatedAtts := as.AttPool.AggregatedAttestationsBySlotIndex(req.Slot, req.CommitteeIndex)
+
+	log.Infof("Aggregating %d unagg + %d already agg", len(unaggregatedAtts), len(aggregatedAtts))
 	aggregatedAtts, err = helpers.AggregateAttestations(append(aggregatedAtts, unaggregatedAtts...))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get aggregate attestations: %v", err)
+	}
+
+	log.Info("After aggregation...")
+	for i, att := range aggregatedAtts {
+		logrus.Infof("Att: %d, slot %d, committee index: %d, block root: %#x, aggregation bits: %v", i, att.Data.Slot, att.Data.CommitteeIndex, att.Data.BeaconBlockRoot, att.AggregationBits)
 	}
 
 	// Save the aggregated attestations to the pool.

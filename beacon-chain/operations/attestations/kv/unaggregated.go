@@ -59,9 +59,9 @@ func (p *AttCaches) UnAggregatedAttestationsBySlotIndex(slot uint64, committeeIn
 
 	p.unAggregateAttLock.RLock()
 	defer p.unAggregateAttLock.RUnlock()
-	for _, a := range p.unAggregatedAtt {
-		if slot == a.Data.Slot && committeeIndex == a.Data.CommitteeIndex {
-			atts = append(atts, a)
+	for _, att := range p.unAggregatedAtt {
+		if slot == att.Data.Slot && committeeIndex == att.Data.CommitteeIndex {
+			atts = append(atts, stateTrie.CopyAttestation(att) /* Copied */)
 		}
 	}
 
