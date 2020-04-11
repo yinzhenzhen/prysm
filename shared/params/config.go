@@ -201,7 +201,7 @@ var defaultBeaconConfig = &BeaconChainConfig{
 	EmptySignature:            [96]byte{},
 	DefaultPageSize:           250,
 	MaxPeersToSync:            15,
-	SlotsPerArchivedPoint:     256,
+	SlotsPerArchivedPoint:     128,
 
 	// Slasher related values.
 	WeakSubjectivityPeriod:    54000,

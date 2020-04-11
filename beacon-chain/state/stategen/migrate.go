@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 
-	"github.com/prysmaticlabs/prysm/beacon-chain/core/helpers"
 	"github.com/prysmaticlabs/prysm/beacon-chain/db/filters"
 	"github.com/prysmaticlabs/prysm/shared/bytesutil"
 	"github.com/sirupsen/logrus"
@@ -24,9 +23,6 @@ func (s *State) MigrateToCold(ctx context.Context, finalizedSlot uint64, finaliz
 	if currentSplitSlot > finalizedSlot {
 		return nil
 	}
-	if !helpers.IsEpochStart(finalizedSlot) {
-		return nil
-	}
 
 	// Migrate all state summary objects from cache to DB.
 	if err := s.beaconDB.SaveStateSummaries(ctx, s.stateSummaryCache.GetAll()); err != nil {
@@ -41,6 +37,11 @@ func (s *State) MigrateToCold(ctx context.Context, finalizedSlot uint64, finaliz
 		return err
 	}
 
+	lastArchivedIndex, err := s.beaconDB.LastArchivedIndex(ctx)
+	if err != nil {
+		return err
+	}
+
 	for _, r := range blockRoots {
 		stateSummary, err := s.beaconDB.StateSummary(ctx, r)
 		if err != nil {
@@ -51,7 +52,7 @@ func (s *State) MigrateToCold(ctx context.Context, finalizedSlot uint64, finaliz
 		}
 
 		archivedPointIndex := stateSummary.Slot / s.slotsPerArchivedPoint
-		if stateSummary.Slot%s.slotsPerArchivedPoint == 0 {
+		if stateSummary.Slot >= (lastArchivedIndex+1)*s.slotsPerArchivedPoint {
 			if !s.beaconDB.HasState(ctx, r) {
 				recoveredArchivedState, err := s.ComputeStateUpToSlot(ctx, stateSummary.Slot)
 				if err != nil {
@@ -72,6 +73,7 @@ func (s *State) MigrateToCold(ctx context.Context, finalizedSlot uint64, finaliz
 				"archiveIndex": archivedPointIndex,
 				"root":         hex.EncodeToString(bytesutil.Trunc(r[:])),
 			}).Info("Saved archived point during state migration")
+			lastArchivedIndex++
 		} else {
 			// Do not delete the current finalized state in case user wants to
 			// switch back to old state service, deleting the recent finalized state
