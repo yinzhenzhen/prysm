@@ -204,7 +204,7 @@ func TestWaitForActivation_ValidatorOriginallyExists(t *testing.T) {
 				},
 				{PublicKey: pubKey2,
 					Status: &ethpb.ValidatorStatusResponse{
-						ActivationEpoch: int64(params.BeaconConfig().FarFutureEpoch),
+						ActivationEpoch: params.BeaconConfig().FarFutureEpoch,
 					},
 				},
 			},
