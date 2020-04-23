@@ -91,12 +91,14 @@ func (r *Service) validateAggregatedAtt(ctx context.Context, signed *ethpb.Signe
 
 	attSlot := signed.Message.Aggregate.Data.Slot
 	if err := validateAggregateAttTime(attSlot, uint64(r.chain.GenesisTime().Unix())); err != nil {
+		log.Error(err)
 		traceutil.AnnotateError(span, err)
 		return false
 	}
 
 	s, err := r.chain.HeadState(ctx)
 	if err != nil {
+		log.Error(err)
 		traceutil.AnnotateError(span, err)
 		return false
 	}
@@ -105,6 +107,7 @@ func (r *Service) validateAggregatedAtt(ctx context.Context, signed *ethpb.Signe
 	if helpers.SlotToEpoch(attSlot) > helpers.SlotToEpoch(s.Slot()) {
 		s, err = state.ProcessSlots(ctx, s, helpers.StartSlot(helpers.SlotToEpoch(attSlot)))
 		if err != nil {
+			log.Error(err)
 			traceutil.AnnotateError(span, err)
 			return false
 		}
@@ -112,24 +115,28 @@ func (r *Service) validateAggregatedAtt(ctx context.Context, signed *ethpb.Signe
 
 	// Verify validator index is within the aggregate's committee.
 	if err := validateIndexInCommittee(ctx, s, signed.Message.Aggregate, signed.Message.AggregatorIndex); err != nil {
+		log.Error(err)
 		traceutil.AnnotateError(span, errors.Wrapf(err, "Could not validate index in committee"))
 		return false
 	}
 
 	// Verify selection proof reflects to the right validator and signature is valid.
 	if err := validateSelection(ctx, s, signed.Message.Aggregate.Data, signed.Message.AggregatorIndex, signed.Message.SelectionProof); err != nil {
+		log.Error(err)
 		traceutil.AnnotateError(span, errors.Wrapf(err, "Could not validate selection for validator %d", signed.Message.AggregatorIndex))
 		return false
 	}
 
 	// Verify the aggregator's signature is valid.
 	if err := validateAggregatorSignature(s, signed); err != nil {
+		log.Error(err)
 		traceutil.AnnotateError(span, errors.Wrapf(err, "Could not verify aggregator signature %d", signed.Message.AggregatorIndex))
 		return false
 	}
 
 	// Verify aggregated attestation has a valid signature.
 	if err := blocks.VerifyAttestation(ctx, s, signed.Message.Aggregate); err != nil {
+		log.Error(err)
 		traceutil.AnnotateError(span, err)
 		return false
 	}
@@ -229,7 +236,7 @@ func validateSelection(ctx context.Context, s *stateTrie.BeaconState, data *ethp
 		return fmt.Errorf("validator is not an aggregator for slot %d", data.Slot)
 	}
 
-	domain, err := helpers.Domain(s.Fork(), helpers.SlotToEpoch(data.Slot), params.BeaconConfig().DomainBeaconAttester, s.GenesisValidatorRoot())
+	domain, err := helpers.Domain(s.Fork(), helpers.SlotToEpoch(data.Slot), params.BeaconConfig().DomainSelectionProof, s.GenesisValidatorRoot())
 	if err != nil {
 		return err
 	}
