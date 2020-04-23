@@ -141,6 +141,8 @@ func (r *Service) validateAggregatedAtt(ctx context.Context, signed *ethpb.Signe
 		return false
 	}
 
+	log.Errorf("Got an passing aggregate! %d", signed.Message.AggregatorIndex)
+
 	return true
 }
 
