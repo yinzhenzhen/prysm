@@ -115,7 +115,7 @@ var defaultBeaconConfig = &BeaconChainConfig{
 	FarFutureEpoch:           1<<64 - 1,
 	BaseRewardsPerEpoch:      4,
 	DepositContractTreeDepth: 32,
-	MinGenesisDelay:          86400, // 1 day
+	MinGenesisDelay:          3600, // 1 day
 
 	// Misc constant.
 	TargetCommitteeSize:            128,
@@ -124,8 +124,8 @@ var defaultBeaconConfig = &BeaconChainConfig{
 	MinPerEpochChurnLimit:          4,
 	ChurnLimitQuotient:             1 << 16,
 	ShuffleRoundCount:              90,
-	MinGenesisActiveValidatorCount: 16384,
-	MinGenesisTime:                 0, // Zero until a proper time is decided.
+	MinGenesisActiveValidatorCount: 4,
+	MinGenesisTime:                 1587755000, // Zero until a proper time is decided.
 	TargetAggregatorsPerCommittee:  16,
 	HysteresisQuotient:             4,
 	HysteresisDownwardMultiplier:   1,
