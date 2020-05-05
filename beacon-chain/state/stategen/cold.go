@@ -3,10 +3,13 @@ package stategen
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/pkg/errors"
+	ethpb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
 	"github.com/prysmaticlabs/prysm/beacon-chain/state"
 	"github.com/prysmaticlabs/prysm/shared/bytesutil"
+	"github.com/prysmaticlabs/prysm/shared/params"
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
 )
@@ -54,5 +57,66 @@ func (s *State) loadColdStateBySlot(ctx context.Context, slot uint64) (*state.Be
 	ctx, span := trace.StartSpan(ctx, "stateGen.loadColdStateBySlot")
 	defer span.End()
 
-	return s.ComputeStateUpToSlot(ctx, slot)
+	if slot == 0 {
+		return s.beaconDB.GenesisState(ctx)
+	}
+
+	archivedIndex := slot/params.BeaconConfig().SlotsPerArchivedPoint - 1
+	archivedRoot := s.beaconDB.ArchivedPointRoot(ctx, archivedIndex)
+	fmt.Println(slot, archivedIndex, hex.EncodeToString(archivedRoot[:]))
+	archivedState, err := s.beaconDB.State(ctx, archivedRoot)
+	if err != nil {
+		return nil, err
+	}
+	if archivedState == nil {
+		lastAncestorState, err := s.lastAncestorState(ctx, archivedRoot)
+		if err != nil {
+			return nil, err
+		}
+		if lastAncestorState == nil {
+			return nil, errUnknownState
+		}
+		fmt.Println("last ancestor state  ", lastAncestorState.Slot())
+		b, err := s.beaconDB.Block(ctx, archivedRoot)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("last ancestor block  ", b.Block.Slot)
+		blks, err := s.LoadBlocks(ctx, lastAncestorState.Slot()+1, b.Block.Slot, archivedRoot)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not load blocks for cold state using root")
+		}
+		fmt.Println("Processed ", len(blks))
+		lastAncestorState, err = s.ReplayBlocks(ctx, lastAncestorState, blks, slot)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not replay blocks for cold state using root")
+		}
+		fmt.Println("last ancestor state  ", lastAncestorState.Slot())
+		return lastAncestorState, nil
+	}
+	if archivedState.Slot() == slot {
+		return archivedState, nil
+	}
+
+	lastBlockRoot, lastBlockSlot, err := s.lastSavedBlock(ctx, slot)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get last saved block")
+	}
+	// Short circuit if no block was saved, replay using slots only.
+	if lastBlockSlot == 0 {
+		return s.ReplayBlocks(ctx, archivedState, []*ethpb.SignedBeaconBlock{}, slot)
+	}
+	if archivedState.Slot() >= slot {
+		return archivedState, nil
+	}
+	blks, err := s.LoadBlocks(ctx, archivedState.Slot()+1, lastBlockSlot, lastBlockRoot)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not load blocks")
+	}
+	archivedState, err = s.ReplayBlocks(ctx, archivedState, blks, slot)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not replay blocks")
+	}
+
+	return archivedState, nil
 }

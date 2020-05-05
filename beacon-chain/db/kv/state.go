@@ -405,7 +405,8 @@ func (k *Store) statesAtSlotBitfieldIndex(ctx context.Context, tx *bolt.Tx, inde
 		return []*state.BeaconState{gState}, nil
 	}
 
-	f := filters.NewFilter().SetStartSlot(uint64(highestSlot)).SetEndSlot(uint64(highestSlot))
+	highestBlockSlot, err := k.HighestSlotBlocksBelow(ctx, uint64(highestSlot))
+	f := filters.NewFilter().SetStartSlot(highestBlockSlot[0].Block.Slot).SetEndSlot(highestBlockSlot[0].Block.Slot)
 
 	keys, err := getBlockRootsByFilter(ctx, tx, f)
 	if err != nil {
