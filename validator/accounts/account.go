@@ -1,3 +1,4 @@
+// Package accounts defines tools to manage an encrypted validator keystore.
 package accounts
 
 import (
@@ -13,10 +14,10 @@ import (
 
 	"github.com/pkg/errors"
 	contract "github.com/prysmaticlabs/prysm/contracts/deposit-contract"
+	"github.com/prysmaticlabs/prysm/shared/cmd"
 	"github.com/prysmaticlabs/prysm/shared/keystore"
 	"github.com/prysmaticlabs/prysm/shared/params"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 var log = logrus.WithField("prefix", "accounts")
@@ -109,6 +110,8 @@ func NewValidatorAccount(directory string, password string) error {
 
 ===================================================================
 `, tx.Data())
+	publicKey := validatorKey.PublicKey.Marshal()[:]
+	log.Infof("Deposit data displayed for public key: %#x", publicKey)
 	return nil
 }
 
@@ -135,16 +138,12 @@ func Exists(keystorePath string) (bool, error) {
 // CreateValidatorAccount creates a validator account from the given cli context.
 func CreateValidatorAccount(path string, passphrase string) (string, string, error) {
 	if passphrase == "" {
-		log.Info("Create a new validator account for eth2")
-		log.Info("Enter a password:")
-		bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+		log.Info("Creating a new validator account for eth2")
+		enteredPassphrase, err := cmd.EnterPassword()
 		if err != nil {
-			log.Fatalf("Could not read account password: %v", err)
-			return path, passphrase, err
+			return path, enteredPassphrase, err
 		}
-		text := string(bytePassword)
-		passphrase = strings.Replace(text, "\n", "", -1)
-
+		passphrase = enteredPassphrase
 	}
 
 	if path == "" {
@@ -153,11 +152,20 @@ func CreateValidatorAccount(path string, passphrase string) (string, string, err
 		reader := bufio.NewReader(os.Stdin)
 		text, err := reader.ReadString('\n')
 		if err != nil {
-			log.Fatal(err)
 			return path, passphrase, err
 		}
 		if text = strings.Replace(text, "\n", "", -1); text != "" {
 			path = text
+		}
+	}
+	// Forces user to create directory if using non-default path.
+	if path != DefaultValidatorDir() {
+		exists, err := Exists(path)
+		if err != nil {
+			return path, passphrase, err
+		}
+		if !exists {
+			return path, passphrase, fmt.Errorf("path %q does not exist", path)
 		}
 	}
 	if err := NewValidatorAccount(path, passphrase); err != nil {
