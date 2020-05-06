@@ -30,6 +30,7 @@ var log = logrus.WithField("prefix", "flags")
 // Flags is a struct to represent which features the client will perform on runtime.
 type Flags struct {
 	MinimalConfig                              bool // MinimalConfig as defined in the spec.
+	SchlesiTestnet                             bool // SchlesiTestnet preconfigured spec.
 	WriteSSZStateTransitions                   bool // WriteSSZStateTransitions to tmp directory.
 	InitSyncNoVerify                           bool // InitSyncNoVerify when initial syncing w/o verifying block's contents.
 	DisableDynamicCommitteeSubnets             bool // Disables dynamic attestation committee subnets via p2p.
@@ -94,6 +95,46 @@ func InitWithReset(c *Flags) func() {
 	}
 	Init(c)
 	return resetFunc
+}
+
+// Copy returns copy of the config object.
+func (c *Flags) Copy() *Flags {
+	return &Flags{
+		MinimalConfig:                              c.MinimalConfig,
+		SchlesiTestnet:                             c.SchlesiTestnet,
+		WriteSSZStateTransitions:                   c.WriteSSZStateTransitions,
+		InitSyncNoVerify:                           c.InitSyncNoVerify,
+		DisableDynamicCommitteeSubnets:             c.DisableDynamicCommitteeSubnets,
+		SkipBLSVerify:                              c.SkipBLSVerify,
+		EnableBackupWebhook:                        c.EnableStateRefCopy,
+		PruneEpochBoundaryStates:                   c.PruneEpochBoundaryStates,
+		EnableSnappyDBCompression:                  c.EnableSnappyDBCompression,
+		ProtectProposer:                            c.ProtectProposer,
+		ProtectAttester:                            c.ProtectAttester,
+		DisableStrictAttestationPubsubVerification: c.DisableStrictAttestationPubsubVerification,
+		DisableUpdateHeadPerAttestation:            c.DisableUpdateHeadPerAttestation,
+		EnableByteMempool:                          c.EnableByteMempool,
+		EnableDomainDataCache:                      c.EnableDomainDataCache,
+		EnableStateGenSigVerify:                    c.EnableStateGenSigVerify,
+		CheckHeadState:                             c.CheckHeadState,
+		EnableNoise:                                c.EnableNoise,
+		DontPruneStateStartUp:                      c.DontPruneStateStartUp,
+		NewStateMgmt:                               c.NewStateMgmt,
+		DisableInitSyncQueue:                       c.DisableInitSyncQueue,
+		EnableFieldTrie:                            c.EnableFieldTrie,
+		EnableBlockHTR:                             c.EnableBlockHTR,
+		NoInitSyncBatchSaveBlocks:                  c.NoInitSyncBatchSaveBlocks,
+		EnableStateRefCopy:                         c.EnableStateRefCopy,
+		WaitForSynced:                              c.WaitForSynced,
+		DisableForkChoice:                          c.DisableForkChoice,
+		BroadcastSlashings:                         c.BroadcastSlashings,
+		EnableSSZCache:                             c.EnableSSZCache,
+		EnableEth1DataVoteCache:                    c.EnableEth1DataVoteCache,
+		EnableSlasherConnection:                    c.EnableSlasherConnection,
+		EnableBlockTreeCache:                       c.EnableBlockTreeCache,
+		KafkaBootstrapServers:                      c.KafkaBootstrapServers,
+		CustomGenesisDelay:                         c.CustomGenesisDelay,
+	}
 }
 
 // ConfigureBeaconChain sets the global config based
@@ -271,6 +312,10 @@ func configureConfig(ctx *cli.Context, cfg *Flags) *Flags {
 		log.Warn("Using minimal config")
 		cfg.MinimalConfig = true
 		params.UseMinimalConfig()
+	} else if ctx.Bool(schlesiTestnetFlag.Name) {
+		log.Warn("Using schlesi testnet config")
+		cfg.SchlesiTestnet = true
+		params.UseSchlesiTestnet()
 	} else {
 		log.Warn("Using default mainnet config")
 	}
