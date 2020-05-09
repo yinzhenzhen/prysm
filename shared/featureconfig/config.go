@@ -123,7 +123,6 @@ func (c *Flags) Copy() *Flags {
 		NewStateMgmt:                               c.NewStateMgmt,
 		DisableInitSyncQueue:                       c.DisableInitSyncQueue,
 		EnableFieldTrie:                            c.EnableFieldTrie,
-		EnableBlockHTR:                             c.EnableBlockHTR,
 		NoInitSyncBatchSaveBlocks:                  c.NoInitSyncBatchSaveBlocks,
 		EnableStateRefCopy:                         c.EnableStateRefCopy,
 		WaitForSynced:                              c.WaitForSynced,
@@ -169,10 +168,6 @@ func ConfigureBeaconChain(ctx *cli.Context) {
 	if ctx.Bool(disableSSZCache.Name) {
 		log.Warn("Disabled ssz cache")
 		cfg.EnableSSZCache = false
-	}
-	if ctx.Bool(enableEth1DataVoteCacheFlag.Name) {
-		log.Warn("Enabled unsafe eth1 data vote cache")
-		cfg.EnableEth1DataVoteCache = true
 	}
 	if ctx.Bool(initSyncVerifyEverythingFlag.Name) {
 		log.Warn("Initial syncing with verifying all block's content signatures.")
