@@ -182,6 +182,27 @@ load(
 
 _cc_image_repos()
 
+load("//third_party/py:python_configure.bzl", "python_configure")
+
+python_configure(name = "local_config_python")
+
+git_repository(
+    name = "rules_python",
+    commit = "a0fbf98d4e3a232144df4d0d80b577c7a693b570",
+    remote = "https://github.com/bazelbuild/rules_python.git",
+)
+
+load("@rules_python//python:pip.bzl", "pip3_import")
+
+pip3_import(
+    name = "py_deps",
+    requirements = "//third_party/py:requirements.txt",
+)
+
+load("@py_deps//:requirements.bzl", "pip_install")
+
+pip_install()
+
 http_archive(
     name = "prysm_testnet_site",
     build_file_content = """

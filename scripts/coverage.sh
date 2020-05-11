@@ -1,18 +1,28 @@
-#!/usr/bin/env bash
+#!/bin/bash
+#
+# Usage
+#
+#   scripts/coverage.sh [/path/to/report-directory/]
+#
 
-declare -a skip_coverage=("github.com/prysmaticlabs/prysm/contracts/sharding-manager-contract"
-                          "github.com/prysmaticlabs/prysm/contracts/validator-registration-contract")
+genhtml=$(which genhtml)
+if [[ -z "${genhtml}" ]]; then
+    echo "Install 'genhtml' (contained in the 'lcov' package)"
+    exit 1
+fi
 
-set -e
-echo "" > coverage.txt
-
-for d in $(go list ./... | grep -v vendor); do
-    if [[ ${skip_coverage[*]} =~ "$d" ]]; then
-        continue
-    fi
-    go test -coverprofile=profile.out -covermode=atomic $d
-    if [ -f profile.out ]; then
-        cat profile.out >> coverage.txt
-        rm profile.out
-    fi
+destdir="$1"
+if [[ -z "${destdir}" ]]; then
+    destdir=$(mktemp -d /tmp/prysmcov.XXXXXX)
+fi
+echo "Running 'bazel coverage'; this may take a while"
+#bazel coverage --features=norace --test_tag_filters="-race_on"  //...
+base=$(bazelisk info bazel-testlogs)
+echo $base
+for f in $(find ${base} -name 'coverage.dat') ; do
+  cp $f ${destdir}/$(echo $f| sed "s|${base}/||" | sed "s|/|_|g")
 done
+cd ${destdir}
+find -name '*coverage.dat' -size 0 -delete
+genhtml -o . --ignore-errors source *coverage.dat
+echo "coverage report at file://${destdir}/index.html"

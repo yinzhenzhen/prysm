@@ -2,6 +2,8 @@ load("@prysm//tools/go:def.bzl", "go_library")
 load("//tools/go:fuzz.bzl", "go_fuzz_test")
 load("@com_github_prysmaticlabs_ethereumapis//tools:ssz.bzl", "SSZ_DEPS", "ssz_gen_marshal")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
+load("@rules_python//python:defs.bzl", "py_library")
+load("@py_deps//:requirements.bzl", "requirement")
 
 ssz_gen_marshal(
     name = "ssz_generated_files",
@@ -71,6 +73,16 @@ test_suite(
         ":rpc_status_fuzz_test_with_libfuzzer",
         ":ssz_cache_fuzz_test_with_libfuzzer",
         ":voluntary_exit_fuzz_test_with_libfuzzer",
+    ],
+)
+
+py_library(
+    name = "py_library",
+    srcs = [
+        "block_fuzz.py",
+    ],
+    deps = [
+        requirement("eth2spec"),
     ],
 )
 

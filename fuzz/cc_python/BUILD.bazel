@@ -1,0 +1,22 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("@py_deps//:requirements.bzl", "requirement")
+
+cc_binary(
+    name = "fuzz",
+    srcs = [
+        "python_fuzz.cc",
+    ],
+    data = [
+        ":example",
+    ],
+    linkopts = ["-lpython2.7"],
+    deps = [
+        "//third_party/python_runtime:headers",
+    ],
+)
+
+py_library(
+    name = "example",
+    srcs = ["example.py"],
+    deps = [requirement("eth2spec")],
+)
