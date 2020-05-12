@@ -7,11 +7,14 @@ cc_binary(
         "python_fuzz.cc",
     ],
     data = [
-        ":example",
+        "example.py",
     ],
-    linkopts = ["-lpython2.7"],
+    linkopts = [
+        "-lpython3.8",
+    ],
     deps = [
         "//third_party/python_runtime:headers",
+        "@bazel_tools//tools/cpp/runfiles",
     ],
 )
 
