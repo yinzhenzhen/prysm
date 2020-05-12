@@ -1,3 +1,4 @@
+// Adapted from https://github.com/sigp/beacon-fuzz (MIT License).
 #pragma once
 
 #include <cstddef>

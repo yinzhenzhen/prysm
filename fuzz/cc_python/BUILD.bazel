@@ -1,25 +1,36 @@
-load("@rules_python//python:defs.bzl", "py_library")
-load("@py_deps//:requirements.bzl", "requirement")
+package(
+    default_testonly = 1,
+    default_visibility = ["//fuzz:__subpackages__"],
+)
 
-cc_binary(
-    name = "fuzz",
+cc_library(
+    name = "runnable",
+    srcs = ["runnable.cc"],
+    hdrs = ["runnable.h"],
+)
+
+cc_library(
+    name = "python",
     srcs = [
-        "python_fuzz.cc",
+        "python.cc",
     ],
-    data = [
-        "example.py",
+    hdrs = [
+        "python.h",
+        "python_coverage.h",
     ],
     linkopts = [
         "-lpython3.8",
     ],
     deps = [
+        ":runnable",
         "//third_party/python_runtime:headers",
         "@bazel_tools//tools/cpp/runfiles",
     ],
 )
 
-py_library(
-    name = "example",
-    srcs = ["example.py"],
-    deps = [requirement("eth2spec")],
+cc_library(
+    name = "differential",
+    srcs = ["differential.cc"],
+    hdrs = ["differential.h"],
+    deps = [":runnable"],
 )

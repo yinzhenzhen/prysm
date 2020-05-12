@@ -67,6 +67,7 @@ def go_fuzz_test(
         input_size = 0,
         size = "medium",
         tags = [],
+        python = None,
         **kwargs):
     go_library(
         name = name + "_lib_with_fuzzer",
