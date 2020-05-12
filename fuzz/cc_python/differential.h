@@ -38,7 +38,7 @@ public:
    * @param data Input data array.
    * @param size Size of input data array.
    */
-  void Run(uint8_t *data, size_t size);
+  void Run(const uint8_t *data, size_t size);
 };
 
 } // namespace fuzzing

@@ -92,8 +92,13 @@ void Differential::Run(const std::vector<uint8_t> &data) {
   }
 }
 
-void Differential::Run(uint8_t *data, size_t size) {
+void Differential::Run(const uint8_t *data, size_t size) {
     // TODO: Read in data to std::vector then call Differential::Run(v).
+    auto v = std::vector<uint8_t>(size);
+    for (auto i = 0; i < size; i ++) {
+        v[i] = data[i];
+    }
+    Differential::Run(v);
 }
 
 } // namespace fuzzing
