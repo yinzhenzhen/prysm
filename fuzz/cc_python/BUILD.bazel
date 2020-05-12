@@ -13,10 +13,10 @@ cc_library(
     name = "python",
     srcs = [
         "python.cc",
+        "python_coverage.h",
     ],
     hdrs = [
         "python.h",
-        "python_coverage.h",
     ],
     linkopts = [
         "-lpython3.8",
@@ -33,4 +33,27 @@ cc_library(
     srcs = ["differential.cc"],
     hdrs = ["differential.h"],
     deps = [":runnable"],
+)
+
+cc_library(
+    name = "go",
+    srcs = [
+        "go.cc",
+    ],
+    hdrs = [
+        "go.h",
+    ],
+    deps = [":runnable"],
+)
+
+cc_test(
+    name = "go_test",
+    srcs = [
+        "go_test.cc",
+    ],
+    deps = [
+        ":go",
+        "@gtest",
+        "@gtest//:gtest_main",
+    ],
 )

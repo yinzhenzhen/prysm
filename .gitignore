@@ -10,6 +10,7 @@ bazel-*
 # IntelliJ
 .idea
 .ijwb
+.clwb
 
 # delve debugger output (not sure how to get rid of these)
 **/debug.test

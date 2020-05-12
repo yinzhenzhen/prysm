@@ -333,6 +333,12 @@ http_archive(
     ],
 )
 
+git_repository(
+    name = "gtest",
+    branch = "v1.10.x",
+    remote = "https://github.com/google/googletest",
+)
+
 # External dependencies
 
 go_repository(

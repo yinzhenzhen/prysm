@@ -35,6 +35,42 @@ func main() {
 }
 """
 
+# Expects a go method available as GO_LLVMFuzzerTestOneInput
+cc_fuzz_tpl = """
+#include <fuzz/cc_python/differential.h>
+#include <fuzz/cc_python/go.h>
+#include <fuzz/cc_python/python.h>
+#include <fuzz/cc_python/ssz_preprocess.h>
+
+// TODO: Remove?
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+
+std::unique_ptr<fuzzing::Differential> differential = nullptr;
+
+extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv) {
+  differential = std::make_unique<fuzzing::Differential>();
+
+  differential->AddModule(std::make_shared<fuzzing::Go>("prysm"));
+  differential->AddModule(std::make_shared<fuzzing::Python>(
+      "pyspec", (*argv)[0], "%s" /*scriptPath*/, false /*disableBls*/));
+
+  return 0;
+}
+
+extern "C" int LLVMFuzzerTestOneInput(uint8_t* data, size_t size) {
+  auto v = fuzzing::SSZPreprocess(data, size);
+  if (v.empty()) {
+    return 0;
+  }
+
+  differential->Run(v);
+
+  return 0;
+}
+"""
+
 def _gen_fuzz_main_impl(ctx):
     if ctx.var.get("gotags") != "libfuzzer":
         fail("gotags must be set to libfuzzer. Use --config=fuzz or --config=fuzzit.")
@@ -54,6 +90,7 @@ gen_fuzz_main = rule(
     attrs = {
         "target_pkg": attr.string(mandatory = True),
         "func": attr.string(mandatory = True),
+        "python": attr.string(),  # TODO: Should be a file...
     },
 )
 
