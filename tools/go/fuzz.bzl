@@ -124,7 +124,7 @@ def _gen_fuzz_cc_diff_impl(ctx):
 
     script_path = "fuzz/block_fuzz.py"  # TODO
 
-    ctx.actions.write(output_file, cc_diff_fuzz_tpl % (script_path))
+    ctx.actions.write(output_file, cc_diff_fuzz_tpl % ("prysm/" + script_path))
     return [DefaultInfo(files = depset([output_file]))]
 
 gen_fuzz_cc_diff = rule(
@@ -192,7 +192,6 @@ def go_fuzz_test(
         name = name + "_diff_fuzz_main_cc",
         srcs = [
             name + "_libfuzz_diff_cc_main",
-            name + "_binary",
         ],
         deps = [
             "//fuzz/cc_python:differential",
@@ -236,8 +235,9 @@ def go_fuzz_test(
         copts = ["-fsanitize=fuzzer,address"],
         linkstatic = 1,
         testonly = 1,
-        srcs = [name + "_diff_fuzz_main_cc", name],
+        srcs = [name],
         deps = [
+            name + "_diff_fuzz_main_cc",
             "@herumi_bls_eth_go_binary//:lib",
             "//fuzz/cc_python:differential",
             "//fuzz/cc_python:go",
@@ -250,6 +250,9 @@ def go_fuzz_test(
             "-use_value_profile=1",
             "-max_total_time=3540",  # One minute early of 3600.
         ] + additional_args,
-        data = [corpus_name],
+        data = [
+            corpus_name,
+            "block_fuzz.py",
+        ],
         timeout = "eternal",
     )
