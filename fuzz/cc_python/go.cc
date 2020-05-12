@@ -1,7 +1,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <iterator>
 
 #include "go.h"
 
