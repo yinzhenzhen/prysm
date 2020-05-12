@@ -31,6 +31,14 @@ public:
    * @param data SSZ encoded input data.
    */
   void Run(const std::vector<uint8_t> &data);
+
+  /**
+   * Run all registered modules and diff the results.
+   *
+   * @param data Input data array.
+   * @param size Size of input data array.
+   */
+  void Run(uint8_t *data, size_t size);
 };
 
 } // namespace fuzzing

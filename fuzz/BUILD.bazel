@@ -127,6 +127,7 @@ go_fuzz_test(
     corpus_path = "external/sigp_beacon_fuzz_corpora/0-11-0/mainnet/block_header",
     func = "BeaconFuzzBlock",
     importpath = IMPORT_PATH,
+    python = "block_fuzz.py",
     deps = [
         "//beacon-chain/core/blocks:go_default_library",
         "//beacon-chain/core/state:go_default_library",

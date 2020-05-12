@@ -41,6 +41,7 @@ cc_library(
         "go.cc",
     ],
     hdrs = [
+        "cgo.h",
         "go.h",
     ],
     deps = [":runnable"],
