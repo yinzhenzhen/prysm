@@ -9,18 +9,28 @@ spec.hash = spec._hash
 VALIDATE_STATE_ROOT = True
 
 class BlockTestCase(spec.Container):
-    pre: spec.BeaconState
+    state_id: spec.uint64
     block: spec.SignedBeaconBlock
 
 def FuzzerInit(bls_disabled: bool) -> None:
     if bls_disabled:
         bls.bls_active = False
 
+def load(state_id: int) -> spec.BeaconState:
+    # TODO: Load state from disk.
+    raise Exception("Loading state from disk is not implemented yet in python.")
+    return None
+
 def FuzzerRunOne(fuzzer_input):
     try:
-        state_block = decode.decode(fuzzer_input, BlockTestCase)
+        state_block = BlockTestCase.decode_bytes(fuzzer_input)
+    except (Exception):
+        return None # Failed to deserialize.
+
+    try:
+        prestate = load(state_block.state_id)
         poststate = spec.state_transition(
-            state=state_block.pre,
+            state=prestate,
             signed_block=state_block.block,
             validate_result=VALIDATE_STATE_ROOT,
         )

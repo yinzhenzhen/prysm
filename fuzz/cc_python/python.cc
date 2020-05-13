@@ -121,6 +121,8 @@ Python::Python(const std::filesystem::path &scriptPath, bool bls_disabled) {
 std::optional<std::vector<uint8_t>>
 Python::Run(const std::vector<uint8_t> &data) {
   std::optional<std::vector<uint8_t>> ret = std::nullopt;
+  auto pState = PyThreadState_Get();
+  PyThreadState_Swap(pState);
 
   if (data.empty()) {
     // Ensure data is not empty. Otherwise:
@@ -189,6 +191,7 @@ Python::Run(const std::vector<uint8_t> &data) {
 
   Py_DECREF(pValue);
   Py_DECREF(pArgs);
+  PyThreadState_Swap(pState);
   return ret;
 }
 } // namespace fuzzing
