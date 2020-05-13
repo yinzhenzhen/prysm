@@ -12,7 +12,7 @@ public:
     result = std::make_optional<std::vector<uint8_t>>(size);
 
     for (int i = 0; i < (int)size; i++) {
-        result.value()[i] = (uint8_t)data[i];
+      result.value()[i] = (uint8_t)data[i];
     }
   }
 };

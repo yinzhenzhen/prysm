@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "runnable.h"
 #include "cgo.h"
+#include "runnable.h"
 
 namespace fuzzing {
 
@@ -25,6 +25,12 @@ public:
    */
   virtual void LoadResult(unsigned char *data, size_t size) = 0;
 
+  virtual ~CxxGoFuzzResult() {
+    if (result.has_value()) {
+      result.value().clear();
+    }
+    result->clear();
+  }
 };
 
 class Go : public Runnable {
@@ -36,10 +42,10 @@ public:
   std::optional<std::vector<uint8_t>>
   Run(const std::vector<uint8_t> &data) override {
     auto *result = (CxxGoFuzzResult *)GO_LLVMFuzzerTestOneInput(
-            (char *) data.data(), data.size());
+        (char *)data.data(), data.size());
 
     if (!result) {
-        return std::nullopt;
+      return std::nullopt;
     }
     return result->result;
   };

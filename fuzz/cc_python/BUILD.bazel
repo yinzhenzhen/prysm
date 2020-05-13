@@ -35,6 +35,17 @@ cc_library(
     deps = [":runnable"],
 )
 
+cc_test(
+    name = "differential_test",
+    srcs = ["differential_test.cc"],
+    deps = [
+        ":differential",
+        ":runnable",
+        "@gtest",
+        "@gtest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "go",
     srcs = [

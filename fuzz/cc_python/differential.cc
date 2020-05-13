@@ -4,10 +4,11 @@
 
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <fstream>
 #include <string>
 #include <utility>
+#include <exception>
+#include <sstream>
 
 namespace {
 
@@ -41,6 +42,23 @@ void dumpBytesVec(std::string filename, const std::vector<uint8_t> &buf) {
 
 namespace fuzzing {
 
+class DifferentialException : public std::exception {
+public:
+    DifferentialException(const std::shared_ptr<Runnable> moduleA, std::shared_ptr<Runnable> moduleB,
+                          std::optional<std::vector<uint8_t>> resultA, std::optional<std::vector<uint8_t>> resultB) {
+        std::ostringstream oss;
+        // TODO: Print hex data?
+        oss << "Module " << moduleA->name() << " returned a different result from module " << moduleB->name();
+        error = const_cast<char *>(oss.str().c_str());
+    }
+
+    virtual const char* what() const throw() {
+        return error;
+    }
+private:
+    char *error;
+};
+
 Differential::Differential(void) {}
 Differential::~Differential() {}
 
@@ -64,7 +82,7 @@ void Differential::Run(const std::vector<uint8_t> &data) {
       cur = std::nullopt;
     }
 
-    if (first == false && cur != prev) {
+    if (!first && cur != prev) {
       // NOTE: an empty list is different to a nullopt
       // TODO(gnattishness) compile-time flag to change how differences are
       // displayed
@@ -83,18 +101,27 @@ void Differential::Run(const std::vector<uint8_t> &data) {
       } else {
         printf("nullopt\n");
       }
-      abort();
+      throw DifferentialException(module, prevmod, cur, prev);
     }
 
     first = false;
+    if (prev.has_value()) {
+        prev.value().clear();
+    }
+    prev->clear();
     prev = std::move(cur);
     prevmod = module;
   }
+
+  if (prev.has_value()) {
+    prev.value().clear();
+  }
+  prev->clear();
 }
 
-void Differential::Run(const uint8_t *data, size_t size) {
+void Differential::Run(const char *data, size_t size) {
     auto v = std::vector<uint8_t>(size);
-    for (auto i = 0; i < size; i ++) {
+    for (auto i = 0; i < (int)size; i ++) {
         v[i] = data[i];
     }
     Differential::Run(v);

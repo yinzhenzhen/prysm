@@ -80,6 +80,8 @@ build:cgo_symbolizer --copt=-g
 build:cgo_symbolizer --define=USE_CGO_SYMBOLIZER=true
 build:cgo_symbolizer -c dbg
 
+build:valgrind --run_under=/usr/bin/valgrind
+
 # multi-arch cross-compiling toolchain configs:
 -----------------------------------------------
 build:cross --crosstool_top=@prysm_toolchains//:multiarch_toolchain

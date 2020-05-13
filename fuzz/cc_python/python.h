@@ -21,7 +21,7 @@ public:
    */
   Python(const std::string &name, const std::string &argv0,
            const std::filesystem::path &scriptPath,
-           const bool bls_disabled = true);
+           bool bls_disabled = true);
 
   /**
    * Run python method FuzzerRunOne in the provided script.
