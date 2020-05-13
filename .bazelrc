@@ -82,6 +82,8 @@ build:cgo_symbolizer -c dbg
 
 build:valgrind --run_under=/usr/bin/valgrind
 
+test --test_env=PYTHON_BIN_PATH=/usr/bin/python3
+
 # multi-arch cross-compiling toolchain configs:
 -----------------------------------------------
 build:cross --crosstool_top=@prysm_toolchains//:multiarch_toolchain

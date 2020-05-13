@@ -17,9 +17,8 @@ def FuzzerInit(bls_disabled: bool) -> None:
         bls.bls_active = False
 
 def FuzzerRunOne(fuzzer_input):
-    state_block = decode(fuzzer_input, BlockTestCase)
-
     try:
+        state_block = decode.decode(fuzzer_input, BlockTestCase)
         poststate = spec.state_transition(
             state=state_block.pre,
             signed_block=state_block.block,

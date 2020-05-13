@@ -65,27 +65,24 @@ func main() {
 """
 
 cc_diff_fuzz_tpl = """
-#include "fuzz/cc_python/differential.h"
 #include "fuzz/cc_python/go.h"
 #include "fuzz/cc_python/python.h"
+#include "fuzz/cc_python/convert.h"
 
-std::unique_ptr<fuzzing::Differential> differential = nullptr;
 std::unique_ptr<fuzzing::Python> python = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv) {
-  differential = std::make_unique<fuzzing::Differential>();
-
-  python = std::make_unique<fuzzing::Python>(
-        "pyspec", (*argv)[0], "%s" /*scriptPath*/, true /*disableBls*/);
-
-//differential->AddModule(std::make_shared<fuzzing::Go>("prysm"));
+  python = std::make_unique<fuzzing::Python>("%s" /*scriptPath*/, true /*disableBls*/);
 
   return 0;
 }
 
 extern "C" int LLVMFuzzerTestOneInput(char* data, size_t size) {
-  GoFuzzResult res = GO_LLVMFuzzerTestOneInput(data, size);
-  //differential->Run(data, size);
+  GoFuzzResult gRes = GO_LLVMFuzzerTestOneInput(data, size);
+  //fuzzing::Convert(data, size);
+  if (python) {
+    python->Run(fuzzing::Convert(data, size));
+  }
 
   return 0;
 }
@@ -200,9 +197,9 @@ def go_fuzz_test(
             name + "_libfuzz_diff_cc_main",
         ],
         deps = [
-            "//fuzz/cc_python:differential",
             "//fuzz/cc_python:go",
             "//fuzz/cc_python:python",
+            "//fuzz/cc_python:convert",
         ],
         testonly = 1,
         linkopts = ["-fsanitize=fuzzer,address"],
@@ -245,7 +242,6 @@ def go_fuzz_test(
         deps = [
             name + "_diff_fuzz_main_cc",
             "@herumi_bls_eth_go_binary//:lib",
-            "//fuzz/cc_python:differential",
             "//fuzz/cc_python:go",
             "//fuzz/cc_python:python",
         ],

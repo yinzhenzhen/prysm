@@ -9,6 +9,27 @@ cc_library(
     hdrs = ["runnable.h"],
 )
 
+# Old target, probably will delete this.
+# TODO: Resolve this before merge to master.
+cc_library(
+    name = "python_old",
+    srcs = [
+        "python_coverage.h",
+        "python_old.cc",
+    ],
+    hdrs = [
+        "python_old.h",
+    ],
+    linkopts = [
+        "-lpython3.8",
+    ],
+    deps = [
+        ":runnable",
+        "//third_party/python_runtime:headers",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+)
+
 cc_library(
     name = "python",
     srcs = [
@@ -22,9 +43,21 @@ cc_library(
         "-lpython3.8",
     ],
     deps = [
-        ":runnable",
         "//third_party/python_runtime:headers",
         "@bazel_tools//tools/cpp/runfiles",
+    ],
+)
+
+cc_test(
+    name = "python_test",
+    srcs = ["python_test.cc"],
+    data = [
+        "python_example.py",
+    ],
+    deps = [
+        ":python",
+        "@gtest",
+        "@gtest//:gtest_main",
     ],
 )
 
@@ -41,6 +74,22 @@ cc_test(
     deps = [
         ":differential",
         ":runnable",
+        "@gtest",
+        "@gtest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "convert",
+    srcs = ["convert.cc"],
+    hdrs = ["convert.h"],
+)
+
+cc_test(
+    name = "convert_test",
+    srcs = ["convert_test.cc"],
+    deps = [
+        ":convert",
         "@gtest",
         "@gtest//:gtest_main",
     ],
