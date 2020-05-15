@@ -72,7 +72,9 @@ cc_diff_fuzz_tpl = """
 std::unique_ptr<fuzzing::Python> python = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv) {
-  python = std::make_unique<fuzzing::Python>("%s" /*scriptPath*/, true /*disableBls*/);
+  if (!python) {
+    python = std::make_unique<fuzzing::Python>("%s" /*scriptPath*/, true /*disableBls*/);
+  }
 
   return 0;
 }
@@ -251,6 +253,7 @@ def go_fuzz_test(
             "-print_final_stats=1",
             "-use_value_profile=1",
             "-max_total_time=3540",  # One minute early of 3600.
+            "-detect_leaks=0",
         ] + additional_args,
         data = [
             corpus_name,
