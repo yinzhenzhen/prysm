@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/beacon-chain/core/helpers"
 	"github.com/prysmaticlabs/prysm/beacon-chain/p2p"
+	"github.com/prysmaticlabs/prysm/beacon-chain/state/stateutil"
 	pb "github.com/prysmaticlabs/prysm/proto/beacon/p2p/v1"
 	"github.com/prysmaticlabs/prysm/shared/bytesutil"
 	"github.com/prysmaticlabs/prysm/shared/params"
@@ -245,6 +246,7 @@ func (r *Service) validateStatusMessage(ctx context.Context, msg *pb.Status, str
 	}
 	genesis := r.chain.GenesisTime()
 	finalizedEpoch := r.chain.FinalizedCheckpt().Epoch
+	finalizedRoot := r.chain.FinalizedCheckpt().Root
 	maxEpoch := slotutil.EpochsSinceGenesis(genesis)
 	// It would take a minimum of 2 epochs to finalize a
 	// previous epoch
@@ -263,10 +265,23 @@ func (r *Service) validateStatusMessage(ctx context.Context, msg *pb.Status, str
 
 	// Handle condition where there hasn't been a finalized check point. The finalized root should be zeroed hash
 	// and the finalized epoch should be 0. Exit early for this case.
-	finalizedRootZeroHash := bytesutil.ToBytes32(r.chain.FinalizedCheckpt().Root) == params.BeaconConfig().ZeroHash
+	finalizedRootZeroHash := bytesutil.ToBytes32(finalizedRoot) == params.BeaconConfig().ZeroHash
 	finalizedEpochZero := r.chain.FinalizedCheckpt().Epoch == 0
-	if finalizedEpochZero && finalizedRootZeroHash {
-		return nil
+	if finalizedEpochZero {
+		if finalizedRootZeroHash {
+			return nil
+		}
+		genBlock, err := r.db.GenesisBlock(ctx)
+		if err != nil {
+			return errGeneric
+		}
+		genRoot, err := stateutil.BlockRoot(genBlock.Block)
+		if err != nil {
+			return errGeneric
+		}
+		if genRoot == bytesutil.ToBytes32(finalizedRoot) {
+			return nil
+		}
 	}
 
 	if !r.db.IsFinalizedBlock(context.Background(), bytesutil.ToBytes32(msg.FinalizedRoot)) {
