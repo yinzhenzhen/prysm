@@ -76,6 +76,36 @@ func TestSaveHistoryBlkHdr(t *testing.T) {
 
 }
 
+func TestSaveBlockHeaders(t *testing.T) {
+	app := cli.App{}
+	set := flag.NewFlagSet("test", 0)
+	db := setupDB(t, cli.NewContext(&app, set, nil))
+	ctx := context.Background()
+
+	tests := []*ethpb.SignedBeaconBlockHeader{
+		{Signature: []byte("let me in"), Header: &ethpb.BeaconBlockHeader{Slot: 0, ProposerIndex: 0}},
+		{Signature: []byte("let me in 2nd"), Header: &ethpb.BeaconBlockHeader{Slot: 0, ProposerIndex: 1}},
+		{Signature: []byte("let me in 3rd"), Header: &ethpb.BeaconBlockHeader{Slot: params.BeaconConfig().SlotsPerEpoch + 1, ProposerIndex: 0}},
+		{Signature: []byte("let me in 3rd"), Header: &ethpb.BeaconBlockHeader{Slot: 1, ProposerIndex: 0}},
+	}
+
+	if err := db.SaveBlockHeaders(ctx, tests); err != nil {
+		t.Fatalf("save block failed: %v", err)
+	}
+
+	for _, bh := range tests {
+		bha, err := db.BlockHeaders(ctx, bh.Header.Slot, bh.Header.ProposerIndex)
+		if err != nil {
+			t.Fatalf("failed to get block: %v", err)
+		}
+
+		if bha == nil || !reflect.DeepEqual(bha[0], tt.bh) {
+			t.Fatalf("get should return bh: %v", bha)
+		}
+	}
+
+}
+
 func TestDeleteHistoryBlkHdr(t *testing.T) {
 	app := cli.App{}
 	set := flag.NewFlagSet("test", 0)

@@ -132,9 +132,6 @@ func (ds *Service) detectHistoricalChainData(ctx context.Context) {
 			log.WithError(err).Errorf("Could not fetch blocks for epoch: %d", epoch)
 			break
 		}
-		if err := ds.slasherDB.SaveBlockHeaders(ctx, blkHdrs); err != nil {
-			log.WithError(err).Error("could not save block headers")
-		}
 
 		for _, att := range indexedAtts {
 			if ctx.Err() == context.Canceled {
