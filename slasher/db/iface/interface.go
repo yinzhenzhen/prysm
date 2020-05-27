@@ -58,6 +58,7 @@ type WriteAccessDatabase interface {
 
 	// BlockHeader related methods.
 	SaveBlockHeader(ctx context.Context, blockHeader *ethpb.SignedBeaconBlockHeader) error
+	SaveBlockHeaders(ctx context.Context, blockHeader []*ethpb.SignedBeaconBlockHeader) error
 	DeleteBlockHeader(ctx context.Context, blockHeader *ethpb.SignedBeaconBlockHeader) error
 	PruneBlockHistory(ctx context.Context, currentEpoch uint64, pruningEpochAge uint64) error
 

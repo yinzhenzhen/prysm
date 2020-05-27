@@ -98,6 +98,43 @@ func (db *Store) SaveBlockHeader(ctx context.Context, blockHeader *ethpb.SignedB
 	return nil
 }
 
+// SaveBlockHeaders accepts a block header and writes it to disk.
+func (db *Store) SaveBlockHeaders(ctx context.Context, blockHeaders []*ethpb.SignedBeaconBlockHeader) error {
+	ctx, span := trace.StartSpan(ctx, "slasherDB.SaveBlockHeader")
+	defer span.End()
+	keys := make([][]byte, len(blockHeaders))
+	encoded := make([][]byte, len(blockHeaders))
+	for i, blkHdr := range blockHeaders {
+		key := encodeSlotValidatorIDSig(blkHdr.Header.Slot, blkHdr.Header.ProposerIndex, blkHdr.Signature)
+		enc, err := proto.Marshal(blkHdr)
+		if err != nil {
+			return errors.Wrap(err, "failed to encode block")
+		}
+		keys[i] = key
+		encoded[i] = enc
+	}
+
+	err := db.update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(historicBlockHeadersBucket)
+		for i, key := range keys {
+			if err := bucket.Put(key, encoded[i]); err != nil {
+				return errors.Wrap(err, "failed to include block header in the historical bucket")
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// Prune block header history every 10th epoch.
+	//if epoch%params.BeaconConfig().PruneSlasherStoragePeriod == 0 {
+	//	return db.PruneBlockHistory(ctx, epoch, params.BeaconConfig().WeakSubjectivityPeriod)
+	//}
+	return nil
+}
+
 // DeleteBlockHeader deletes a block header using the slot and validator id.
 func (db *Store) DeleteBlockHeader(ctx context.Context, blockHeader *ethpb.SignedBeaconBlockHeader) error {
 	ctx, span := trace.StartSpan(ctx, "slasherDB.DeleteBlockHeader")

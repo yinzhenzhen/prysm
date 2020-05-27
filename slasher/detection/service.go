@@ -127,6 +127,15 @@ func (ds *Service) detectHistoricalChainData(ctx context.Context) {
 			break
 		}
 
+		blkHdrs, err := ds.beaconClient.RequestHistoricalBlockHeaders(ctx, epoch)
+		if err != nil {
+			log.WithError(err).Errorf("Could not fetch blocks for epoch: %d", epoch)
+			break
+		}
+		if err := ds.slasherDB.SaveBlockHeaders(ctx, blkHdrs); err != nil {
+			log.WithError(err).Error("could not save block headers")
+		}
+
 		for _, att := range indexedAtts {
 			if ctx.Err() == context.Canceled {
 				log.WithError(ctx.Err()).Error("context has been canceled, ending detection")
@@ -143,6 +152,20 @@ func (ds *Service) detectHistoricalChainData(ctx context.Context) {
 				}
 			}
 			ds.submitAttesterSlashings(ctx, slashings)
+		}
+		for _, blkHdr := range blkHdrs {
+			if ctx.Err() == context.Canceled {
+				log.WithError(ctx.Err()).Error("context has been canceled, ending detection")
+				return
+			}
+			slashing, err := ds.DetectDoubleProposals(ctx, blkHdr)
+			if err != nil {
+				log.WithError(err).Error("Could not detect proposer slashings")
+				continue
+			}
+			if slashing != nil {
+				ds.submitProposerSlashing(ctx, slashing)
+			}
 		}
 		latestStoredHead = &ethpb.ChainHead{HeadEpoch: epoch}
 		if err := ds.slasherDB.SaveChainHead(ctx, latestStoredHead); err != nil {
