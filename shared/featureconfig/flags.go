@@ -9,13 +9,17 @@ var (
 		Name:  "dev",
 		Usage: "Enable experimental features still in development. These features may not be stable.",
 	}
-	broadcastSlashingFlag = &cli.BoolFlag{
-		Name:  "broadcast-slashing",
-		Usage: "Broadcast slashings from slashing pool.",
+	disableBroadcastSlashingFlag = &cli.BoolFlag{
+		Name:  "disable-broadcast-slashings",
+		Usage: "Disables broadcasting slashings submitted to the beacon node.",
 	}
 	minimalConfigFlag = &cli.BoolFlag{
 		Name:  "minimal-config",
 		Usage: "Use minimal config with parameters as defined in the spec.",
+	}
+	e2eConfigFlag = &cli.BoolFlag{
+		Name:  "e2e-config",
+		Usage: "Use the E2E testing config, only for use within end-to-end testing.",
 	}
 	wittiTestnetFlag = &cli.BoolFlag{
 		Name:  "witti-testnet",
@@ -124,25 +128,26 @@ var (
 		Name:  "enable-new-state-mgmt",
 		Usage: "This enable the usage of state mgmt service across Prysm",
 	}
-	enableFieldTrie = &cli.BoolFlag{
-		Name:  "enable-state-field-trie",
-		Usage: "Enables the usage of state field tries to compute the state root",
+	disableFieldTrie = &cli.BoolFlag{
+		Name:  "disable-state-field-trie",
+		Usage: "Disables the usage of state field tries to compute the state root",
 	}
+
 	disableInitSyncBatchSaveBlocks = &cli.BoolFlag{
 		Name:  "disable-init-sync-batch-save-blocks",
 		Usage: "Instead of saving batch blocks to the DB during initial syncing, this disables batch saving of blocks",
 	}
-	enableStateRefCopy = &cli.BoolFlag{
-		Name:  "enable-state-ref-copy",
-		Usage: "Enables the usage of a new copying method for our state fields.",
+	disableStateRefCopy = &cli.BoolFlag{
+		Name:  "disable-state-ref-copy",
+		Usage: "Disables the usage of a new copying method for our state fields.",
 	}
 	waitForSyncedFlag = &cli.BoolFlag{
 		Name:  "wait-for-synced",
 		Usage: "Uses WaitForSynced for validator startup, to ensure a validator is able to communicate with the beacon node as quick as possible",
 	}
-	disableHistoricalDetectionFlag = &cli.BoolFlag{
-		Name:  "disable-historical-detection",
-		Usage: "Disables historical attestation detection for the slasher",
+	enableHistoricalDetectionFlag = &cli.BoolFlag{
+		Name:  "enable-historical-detection",
+		Usage: "Enables historical attestation detection for the slasher",
 	}
 	disableLookbackFlag = &cli.BoolFlag{
 		Name:  "disable-lookback",
@@ -156,14 +161,17 @@ var (
 		Name:  "enable-init-sync-wrr",
 		Usage: "Enables weighted round robin fetching optimization",
 	}
+	reduceAttesterStateCopy = &cli.BoolFlag{
+		Name:  "reduce-attester-state-copy",
+		Usage: "Reduces the amount of state copies for attester rpc",
+	}
 )
 
 // devModeFlags holds list of flags that are set when development mode is on.
 var devModeFlags = []cli.Flag{
-	enableStateRefCopy,
-	enableFieldTrie,
 	enableNewStateMgmt,
 	enableInitSyncWeightedRoundRobin,
+	reduceAttesterStateCopy,
 }
 
 // Deprecated flags list.
@@ -361,6 +369,25 @@ var (
 		Usage:  deprecatedUsage,
 		Hidden: true,
 	}
+	deprecatedBroadcastSlashingFlag = &cli.BoolFlag{
+		Name:   "broadcast-slashing",
+		Usage:  deprecatedUsage,
+		Hidden: true,
+	}
+	deprecatedDisableHistoricalDetectionFlag = &cli.BoolFlag{
+		Name:   "disable-historical-detection",
+		Usage:  deprecatedUsage,
+		Hidden: true,
+	}
+	deprecateEnableStateRefCopy = &cli.BoolFlag{
+		Name:   "enable-state-ref-copy",
+		Usage:  deprecatedUsage,
+		Hidden: true,
+	}
+	deprecateEnableFieldTrie = &cli.BoolFlag{
+		Name:   "enable-state-field-trie",
+		Usage:  deprecatedUsage,
+		Hidden: true}
 )
 
 var deprecatedFlags = []cli.Flag{
@@ -402,12 +429,17 @@ var deprecatedFlags = []cli.Flag{
 	deprecatedAccountMetricsFlag,
 	deprecatedEnableDomainDataCacheFlag,
 	deprecatedEnableByteMempool,
+	deprecatedBroadcastSlashingFlag,
+	deprecatedDisableHistoricalDetectionFlag,
+	deprecateEnableStateRefCopy,
+	deprecateEnableFieldTrie,
 }
 
 // ValidatorFlags contains a list of all the feature flags that apply to the validator client.
 var ValidatorFlags = append(deprecatedFlags, []cli.Flag{
 	minimalConfigFlag,
 	wittiTestnetFlag,
+	e2eConfigFlag,
 	enableProtectAttesterFlag,
 	enableProtectProposerFlag,
 	enableExternalSlasherProtectionFlag,
@@ -417,7 +449,8 @@ var ValidatorFlags = append(deprecatedFlags, []cli.Flag{
 
 // SlasherFlags contains a list of all the feature flags that apply to the slasher client.
 var SlasherFlags = append(deprecatedFlags, []cli.Flag{
-	disableHistoricalDetectionFlag,
+	e2eConfigFlag,
+	enableHistoricalDetectionFlag,
 	disableLookbackFlag,
 }...)
 
@@ -433,6 +466,7 @@ var BeaconChainFlags = append(deprecatedFlags, []cli.Flag{
 	devModeFlag,
 	customGenesisDelayFlag,
 	minimalConfigFlag,
+	e2eConfigFlag,
 	wittiTestnetFlag,
 	writeSSZStateTransitionsFlag,
 	disableForkChoiceUnsafeFlag,
@@ -450,25 +484,23 @@ var BeaconChainFlags = append(deprecatedFlags, []cli.Flag{
 	checkHeadState,
 	enableNoiseHandshake,
 	dontPruneStateStartUp,
-	broadcastSlashingFlag,
+	disableBroadcastSlashingFlag,
 	enableNewStateMgmt,
-	enableFieldTrie,
 	disableInitSyncBatchSaveBlocks,
-	enableStateRefCopy,
 	waitForSyncedFlag,
 	skipRegenHistoricalStates,
 	enableInitSyncWeightedRoundRobin,
+	disableFieldTrie,
+	disableStateRefCopy,
+	reduceAttesterStateCopy,
 }...)
 
 // E2EBeaconChainFlags contains a list of the beacon chain feature flags to be tested in E2E.
 var E2EBeaconChainFlags = []string{
 	"--cache-filtered-block-tree",
-	"--enable-byte-mempool",
 	"--enable-state-gen-sig-verify",
 	"--check-head-state",
-	"--enable-state-field-trie",
-	"--enable-state-ref-copy",
 	"--enable-new-state-mgmt",
 	"--enable-init-sync-wrr",
-	"--broadcast-slashing",
+	"--reduce-attester-state-copy",
 }
