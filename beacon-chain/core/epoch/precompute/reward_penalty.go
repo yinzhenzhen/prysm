@@ -38,22 +38,24 @@ func ProcessRewardsAndPenaltiesPrecompute(
 		return nil, errors.Wrap(err, "could not get attestation delta")
 	}
 	if _, err := mputil.Scatter(numOfVals, func(offset int, i int, _ *sync.RWMutex) (interface{}, error) {
-		idx := offset+i-1
-		vp[idx].BeforeEpochTransitionBalance, err = state.BalanceAtIndex(uint64(idx))
-		if err != nil {
-			return nil, errors.Wrap(err, "could not get validator balance before epoch")
-		}
+		for idx := offset; idx < offset+i; idx++ {
 
-		if err := helpers.IncreaseBalance(state, uint64(idx), attsRewards[idx]+proposerRewards[idx]); err != nil {
-			return nil, err
-		}
-		if err := helpers.DecreaseBalance(state, uint64(idx), attsPenalties[idx]); err != nil {
-			return nil, err
-		}
+			vp[idx].BeforeEpochTransitionBalance, err = state.BalanceAtIndex(uint64(idx))
+			if err != nil {
+				return nil, errors.Wrap(err, "could not get validator balance before epoch")
+			}
 
-		vp[idx].AfterEpochTransitionBalance, err = state.BalanceAtIndex(uint64(idx))
-		if err != nil {
-			return nil, errors.Wrap(err, "could not get validator balance after epoch")
+			if err := helpers.IncreaseBalance(state, uint64(idx), attsRewards[idx]+proposerRewards[idx]); err != nil {
+				return nil, err
+			}
+			if err := helpers.DecreaseBalance(state, uint64(idx), attsPenalties[idx]); err != nil {
+				return nil, err
+			}
+
+			vp[idx].AfterEpochTransitionBalance, err = state.BalanceAtIndex(uint64(idx))
+			if err != nil {
+				return nil, errors.Wrap(err, "could not get validator balance after epoch")
+			}
 		}
 		return nil, nil
 	}); err != nil {
