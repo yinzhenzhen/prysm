@@ -8,10 +8,9 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/cache:go_default_library",
-        "//beacon-chain/core/state/interop:go_default_library",
         "//beacon-chain/db:go_default_library",
-        "//beacon-chain/db/filters:go_default_library",
         "//shared/featureconfig:go_default_library",
+        "//shared/params:go_default_library",
     ],
 )
 
