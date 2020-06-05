@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"bytes"
 	"context"
 	"time"
 
@@ -95,12 +94,6 @@ func (s *Service) CurrentJustifiedCheckpt() *ethpb.Checkpoint {
 func (s *Service) PreviousJustifiedCheckpt() *ethpb.Checkpoint {
 	if s.prevJustifiedCheckpt == nil {
 		return &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	}
-
-	// If head state exists but there hasn't been a justified check point,
-	// the check point root should refer to genesis block root.
-	if bytes.Equal(s.prevJustifiedCheckpt.Root, params.BeaconConfig().ZeroHash[:]) {
-		return &ethpb.Checkpoint{Root: s.genesisRoot[:]}
 	}
 
 	return state.CopyCheckpoint(s.prevJustifiedCheckpt)

@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/beacon-chain/core/helpers"
 	"github.com/prysmaticlabs/prysm/beacon-chain/p2p"
-	"github.com/prysmaticlabs/prysm/beacon-chain/state/stateutil"
 	pb "github.com/prysmaticlabs/prysm/proto/beacon/p2p/v1"
 	"github.com/prysmaticlabs/prysm/shared/bytesutil"
 	"github.com/prysmaticlabs/prysm/shared/params"
@@ -96,6 +95,11 @@ func (r *Service) sendRPCStatusRequest(ctx context.Context, id peer.ID) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := stream.Reset(); err != nil {
+			log.WithError(err).Errorf("Failed to reset stream with protocol %s", stream.Protocol())
+		}
+	}()
 
 	code, errMsg, err := ReadStatusCode(stream, r.p2p.Encoding())
 	if err != nil {
@@ -262,28 +266,12 @@ func (r *Service) validateStatusMessage(ctx context.Context, msg *pb.Status, str
 	if finalizedEpoch < msg.FinalizedEpoch {
 		return nil
 	}
-
-	// Handle condition where there hasn't been a finalized check point. The finalized root should be zeroed hash
-	// and the finalized epoch should be 0. Exit early for this case.
-	finalizedRootZeroHash := bytesutil.ToBytes32(finalizedRoot) == params.BeaconConfig().ZeroHash
-	finalizedEpochZero := r.chain.FinalizedCheckpt().Epoch == 0
-	if finalizedEpochZero {
-		if finalizedRootZeroHash {
-			return nil
-		}
-		genBlock, err := r.db.GenesisBlock(ctx)
-		if err != nil {
-			return errGeneric
-		}
-		genRoot, err := stateutil.BlockRoot(genBlock.Block)
-		if err != nil {
-			return errGeneric
-		}
-		if genRoot == bytesutil.ToBytes32(finalizedRoot) {
-			return nil
-		}
+	finalizedAtGenesis := (finalizedEpoch == msg.FinalizedEpoch) && finalizedEpoch == 0
+	rootIsEqual := bytes.Equal(finalizedRoot, msg.FinalizedRoot)
+	// If both peers are at genesis with the same root hash, then exit.
+	if finalizedAtGenesis && rootIsEqual {
+		return nil
 	}
-
 	if !r.db.IsFinalizedBlock(context.Background(), bytesutil.ToBytes32(msg.FinalizedRoot)) {
 		return errInvalidFinalizedRoot
 	}

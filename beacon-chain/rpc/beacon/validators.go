@@ -323,7 +323,7 @@ func (bs *Server) ListValidators(
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not get head state")
 	}
-	currentEpoch := helpers.CurrentEpoch(headState)
+	currentEpoch := helpers.SlotToEpoch(bs.GenesisTimeFetcher.CurrentSlot())
 	requestedEpoch := currentEpoch
 
 	switch q := req.QueryFilter.(type) {
@@ -332,7 +332,28 @@ func (bs *Server) ListValidators(
 			requestedEpoch = 0
 		}
 	case *ethpb.ListValidatorsRequest_Epoch:
+		if q.Epoch > currentEpoch {
+			return nil, status.Errorf(
+				codes.InvalidArgument,
+				"Cannot retrieve information about an epoch in the future, current epoch %d, requesting %d",
+				currentEpoch,
+				q.Epoch,
+			)
+		}
 		requestedEpoch = q.Epoch
+	}
+
+	if helpers.StartSlot(requestedEpoch) > headState.Slot() {
+		headState = headState.Copy()
+		headState, err = state.ProcessSlots(ctx, headState, helpers.StartSlot(requestedEpoch))
+		if err != nil {
+			return nil, status.Errorf(
+				codes.Internal,
+				"Could not process slots up to %d: %v",
+				helpers.StartSlot(requestedEpoch),
+				err,
+			)
+		}
 	}
 
 	validatorList := make([]*ethpb.Validators_ValidatorContainer, 0)
@@ -396,14 +417,6 @@ func (bs *Server) ListValidators(
 			}
 		}
 		validatorList = validatorList[:stopIdx]
-	} else if requestedEpoch > currentEpoch {
-		// Otherwise, we are requesting data from the future and we return an error.
-		return nil, status.Errorf(
-			codes.InvalidArgument,
-			"Cannot retrieve information about an epoch in the future, current epoch %d, requesting %d",
-			currentEpoch,
-			requestedEpoch,
-		)
 	}
 
 	// Filter active validators if the request specifies it.
@@ -939,6 +952,7 @@ func (bs *Server) GetValidatorPerformance(
 	validatorSummary := state.ValidatorSummary
 
 	responseCap := len(req.Indices) + len(req.PublicKeys)
+	pubKeys := make([][]byte, 0, responseCap)
 	validatorIndices := make([]uint64, 0, responseCap)
 	beforeTransitionBalances := make([]uint64, 0, responseCap)
 	afterTransitionBalances := make([]uint64, 0, responseCap)
@@ -1008,6 +1022,8 @@ func (bs *Server) GetValidatorPerformance(
 		}
 
 		summary := validatorSummary[idx]
+		pubKey := val.PublicKey()
+		pubKeys = append(pubKeys, pubKey[:])
 		effectiveBalances = append(effectiveBalances, summary.CurrentEpochEffectiveBalance)
 		beforeTransitionBalances = append(beforeTransitionBalances, summary.BeforeEpochTransitionBalance)
 		afterTransitionBalances = append(afterTransitionBalances, summary.AfterEpochTransitionBalance)
@@ -1019,6 +1035,7 @@ func (bs *Server) GetValidatorPerformance(
 	}
 
 	return &ethpb.ValidatorPerformanceResponse{
+		PublicKeys:                    pubKeys,
 		InclusionSlots:                inclusionSlots,
 		InclusionDistances:            inclusionDistances,
 		CorrectlyVotedSource:          correctlyVotedSource,
